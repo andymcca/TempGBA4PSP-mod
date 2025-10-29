@@ -3937,17 +3937,37 @@ void set_gba_resolution(void)
 
 void clear_screen(u32 color)
 {
+  // Used by GUI Menus
+  
   // When screen is cleared, overlay needs to be re-applied
   extern int overlay_needs_update;
   overlay_needs_update = 1;
+
+  // Hardware Clear - results in a blank screen in PPSSPP emulator
+  //sceGuStart(GU_DIRECT, display_list);
+
+  //sceGuClearColor(color);
+  //sceGuClear(GU_COLOR_BUFFER_BIT | GU_FAST_CLEAR_BIT);
+
+  //sceGuFinish();
+  //sceGuSync(0, GU_SYNC_FINISH);
+
+  // Software Clear - work on PPSSPP and real PSP Hardware
   
-  sceGuStart(GU_DIRECT, display_list);
-
-  sceGuClearColor(color);
-  sceGuClear(GU_COLOR_BUFFER_BIT | GU_FAST_CLEAR_BIT);
-
-  sceGuFinish();
-  sceGuSync(0, GU_SYNC_FINISH);
+  // Convert COLOR32 (8-bit RGB) to COLOR16 (5-bit RGB, 5551 format)
+  u32 r8 = (color >>  0) & 0xFF;
+  u32 g8 = (color >>  8) & 0xFF;
+  u32 b8 = (color >> 16) & 0xFF;
+  u16 color16 = ((r8 >> 3) << 0) | ((g8 >> 3) << 5) | ((b8 >> 3) << 10) | 0x8000;
+  
+  // Use UNCACHED VRAM (0x44000000) to match print_string()
+  // Using cached (0x04000000) causes sync issues in PPSSPP and can mean text doesn't appear (same as Hardware Clear)
+  u16 *vram_ptr = (u16 *)((u32)draw_frame | 0x44000000);
+  u32 pixels = PSP_LINE_SIZE * PSP_SCREEN_HEIGHT;
+  for (u32 i = 0; i < pixels; i++)
+  {
+    vram_ptr[i] = color16;
+  }
 }
 
 void clear_texture(u16 color)
