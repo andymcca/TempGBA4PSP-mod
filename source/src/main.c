@@ -717,7 +717,10 @@ static int load_ku_bridge_prx(int devkit_version)
     }
 
     init_ku_bridge(devkit_version);
-    init_input_kernel();
+
+	// Kernel-Mode input functions don't work with PPSSPP - disable these so input works on both
+	// real hardware and PSP emulation via PPSSPP
+    // init_input_kernel();
 
     if (devkit_version >= 0x03050210)
       __draw_volume_status = draw_volume_status;
