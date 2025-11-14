@@ -21,6 +21,8 @@
 #ifndef VIDEO_H
 #define VIDEO_H
 
+#include <psptypes.h>
+
 
 #define GBA_SCREEN_WIDTH  (240)
 #define GBA_SCREEN_HEIGHT (160)
@@ -67,27 +69,7 @@
 
 
 void update_scanline(void);
-void (*update_screen)(void);
-
-void flip_screen(u32 vsync);
-
-void video_resolution_large(void);
-void video_resolution_small(void);
-
-void init_video(int devkit_version);
-void video_term(void);
-
-void print_string(const char *str, s16 x, u16 y, u16 fg_color, s16 bg_color);
-void print_string_ext(const char *str, s16 x, u16 y, u16 fg_color, s16 bg_color, void *_dest_ptr, u16 pitch);
-
-void print_string_gbk(const char *str, s16 x, u16 y, u16 fg_color, s16 bg_color);
-void print_string_ext_gbk(const char *str, s16 x, u16 y, u16 fg_color, s16 bg_color, void *_dest_ptr, u16 pitch);
-
-void clear_screen(u32 color);
-void clear_texture(u16 color);
-
-void blit_to_screen(u16 *src, u16 w, u16 h, u16 dest_x, u16 dest_y);
-u16 *copy_screen(void);
+extern void (*update_screen)(void);
 
 extern s32 affine_reference_x[2];
 extern s32 affine_reference_y[2];
@@ -112,17 +94,6 @@ typedef struct
   bitmap_render_function normal_render;
 } BitmapLayerRenderStruct;
 
-
-void draw_box_line(u16 x1, u16 y1, u16 x2, u16 y2, u16 color);
-void draw_box_fill(u16 x1, u16 y1, u16 x2, u16 y2, u16 color);
-void draw_box_alpha(u16 x1, u16 y1, u16 x2, u16 y2, u32 color);
-
-void draw_hline(u16 sx, u16 ex, u16 y, u16 color);
-void draw_vline(u16 x, u16 sy, u16 ey, u16 color);
-
-int (*__draw_volume_status)(int draw);
-int draw_volume_status(int draw);
-int draw_volume_status_null(int draw);
 
 void video_write_mem_savestate(SceUID savestate_file);
 void video_read_savestate(SceUID savestate_file);

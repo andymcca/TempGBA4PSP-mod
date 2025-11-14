@@ -287,7 +287,7 @@ static s32 save_game_config_file(void);
 
 static void update_status_string(char *time_str, char *batt_str, u16 *color_batt);
 static void update_status_string_gbk(char *time_str, char *batt_str, u16 *color_batt);
-static void get_timestamp_string(char *buffer, u16 msg_id, pspTime *msg_time, int day_of_week);
+static void get_timestamp_string(char *buffer, u16 msg_id, ScePspDateTime *msg_time, int day_of_week);
 
 static void get_savestate_info(char *filename, u16 *snapshot, char *timestamp);
 static void get_savestate_filename(u32 slot, char *name_buffer);
@@ -796,7 +796,7 @@ static void get_savestate_info(char *filename, u16 *snapshot, char *timestamp)
     u64 savestate_tick_utc;
     u64 savestate_tick_local;
 
-    pspTime savestate_time = { 0 };
+    ScePspDateTime savestate_time = { 0 };
 
     if (snapshot != NULL)
       FILE_READ(savestate_file, snapshot, GBA_SCREEN_SIZE);
@@ -926,7 +926,8 @@ u32 menu(void)
     MSG[MSG_SCN_SCALED_NONE],
     MSG[MSG_SCN_SCALED_X15_GU],
     MSG[MSG_SCN_SCALED_X15_SW],
-    MSG[MSG_SCN_SCALED_USER]
+    MSG[MSG_SCN_SCALED_USER],
+    MSG[MSG_SCN_SCALED_16X9_GU]
   };
 
   const char *frameskip_options[] =
@@ -1474,7 +1475,7 @@ u32 menu(void)
   // Marker for help information, don't go past this mark (except \n)------*
   MenuOptionType emulator_options[] =
   {
-    STRING_SELECTION_OPTION(NULL, MSG[MSG_OPTION_MENU_0], scale_options, &option_screen_scale, 4, MSG_OPTION_MENU_HELP_0, 0),
+    STRING_SELECTION_OPTION(NULL, MSG[MSG_OPTION_MENU_0], scale_options, &option_screen_scale, 5, MSG_OPTION_MENU_HELP_0, 0),
 
     NUMERIC_SELECTION_OPTION(NULL, MSG[MSG_OPTION_MENU_1], &option_screen_mag, 201, MSG_OPTION_MENU_HELP_1, 1),
 
@@ -1893,7 +1894,7 @@ u32 menu(void)
 
 static void update_status_string(char *time_str, char *batt_str, u16 *color_batt)
 {
-  pspTime current_time = { 0 };
+  ScePspDateTime current_time = { 0 };
 
   u32 i = 0;
   int batt_life_per;
@@ -1958,7 +1959,7 @@ static void update_status_string(char *time_str, char *batt_str, u16 *color_batt
 
 static void update_status_string_gbk(char *time_str, char *batt_str, u16 *color_batt)
 {
-  pspTime current_time = { 0 };
+  ScePspDateTime current_time = { 0 };
 
   u32 i = 0;
   int batt_life_per;
@@ -2022,7 +2023,7 @@ static void update_status_string_gbk(char *time_str, char *batt_str, u16 *color_
 }
 
 
-static void get_timestamp_string(char *buffer, u16 msg_id, pspTime *msg_time, int day_of_week)
+static void get_timestamp_string(char *buffer, u16 msg_id, ScePspDateTime *msg_time, int day_of_week)
 {
   const char *week_str[] =
   {
@@ -2032,13 +2033,13 @@ static void get_timestamp_string(char *buffer, u16 msg_id, pspTime *msg_time, in
   switch (date_format)
   {
     case 0: // DATE_FORMAT_YYYYMMDD
-      sprintf(buffer, MSG[msg_id + 0], msg_time->year, msg_time->month, msg_time->day, week_str[day_of_week], msg_time->hour, msg_time->minutes, msg_time->seconds, (msg_time->microseconds / 1000));
+      sprintf(buffer, MSG[msg_id + 0], msg_time->year, msg_time->month, msg_time->day, week_str[day_of_week], msg_time->hour, msg_time->minute, msg_time->second, (msg_time->microsecond / 1000));
       break;
     case 1: // DATE_FORMAT_MMDDYYYY
-      sprintf(buffer, MSG[msg_id + 1], msg_time->month, msg_time->day, msg_time->year, week_str[day_of_week], msg_time->hour, msg_time->minutes, msg_time->seconds, (msg_time->microseconds / 1000));
+      sprintf(buffer, MSG[msg_id + 1], msg_time->month, msg_time->day, msg_time->year, week_str[day_of_week], msg_time->hour, msg_time->minute, msg_time->second, (msg_time->microsecond / 1000));
       break;
     case 2: // DATE_FORMAT_DDMMYYYY
-      sprintf(buffer, MSG[msg_id + 1], msg_time->day, msg_time->month, msg_time->year, week_str[day_of_week], msg_time->hour, msg_time->minutes, msg_time->seconds, (msg_time->microseconds / 1000));
+      sprintf(buffer, MSG[msg_id + 1], msg_time->day, msg_time->month, msg_time->year, week_str[day_of_week], msg_time->hour, msg_time->minute, msg_time->second, (msg_time->microsecond / 1000));
       break;
   }
 }
@@ -2175,7 +2176,7 @@ s32 load_game_config_file(void)
 
       FILE_READ_ARRAY(game_config_file, file_options);
 
-      option_screen_scale   = file_options[0] % 4;
+      option_screen_scale   = file_options[0] % 5;
       option_screen_mag     = file_options[1] % 201;
       option_screen_filter  = file_options[2] % 2;
       option_frameskip_type  = file_options[3] % 3;
@@ -2239,7 +2240,7 @@ s32 load_config_file(void)
 
       FILE_READ_ARRAY(config_file, file_options);
 
-      option_screen_scale   = file_options[0] % 4;
+      option_screen_scale   = file_options[0] % 5;
       option_screen_mag     = file_options[1] % 201;
       option_screen_filter  = file_options[2] % 2;
       psp_fps_debug       = file_options[3] % 2;
@@ -2445,7 +2446,7 @@ static void get_snapshot_filename(char *name, const char *ext)
   char filename[MAX_FILE];
   char timestamp[80];
 
-  pspTime current_time = { 0 };
+  ScePspDateTime current_time = { 0 };
 
   change_ext(gamepak_filename, filename, "_");
 

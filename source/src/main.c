@@ -759,10 +759,12 @@ static void setup_main(void)
 
   sceUtilityGetSystemParamInt(PSP_SYSTEMPARAM_ID_INT_DATE_FORMAT, &date_format);
 
-  if ((load_ku_bridge_prx(devkit_version) < 0) && (devkit_version < 0x06000010))
-    enable_home_menu = 0;
-  else
-    enable_home_menu = 1;
+  // Kernel-mode controls disabled for PPSSPP compatibility
+  // if ((load_ku_bridge_prx(devkit_version) < 0) && (devkit_version < 0x06000010))
+  //   enable_home_menu = 0;
+  // else
+  //   enable_home_menu = 1;
+  enable_home_menu = 0;  // Always disable home menu without kernel mode
 
   load_config_file();
 

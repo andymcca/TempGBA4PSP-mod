@@ -2551,9 +2551,11 @@ static void thumb_flag_status(BlockDataThumbType *block_data, u16 opcode)
 // ARM or Thumb mode.
 
 #define block_lookup_address_pc_arm()                                         \
+  u32 thumb = 0;                                                           \
   pc &= ~0x03;                                                                \
 
-#define block_lookup_address_pc_thumb()                                       \
+#define block_lookup_address_pc_thumb()                                     \
+  u32 thumb = 1;                                            \
   pc &= ~0x01;                                                                \
 
 #define block_lookup_translate_arm(mem_type)                                  \
@@ -2735,13 +2737,14 @@ static void thumb_flag_status(BlockDataThumbType *block_data, u16 opcode)
     case 0x0A: case 0x0B:                                                     \
     case 0x0C: case 0x0D:                                                     \
     {                                                                         \
-      u32 hash_target = ((pc * 2654435761U) >> 16) & (ROM_BRANCH_HASH_SIZE - 1); \
+      u32 key = pc | thumb;                                                            \
+      u32 hash_target = ((key * 2654435761U) >> 16) & (ROM_BRANCH_HASH_SIZE - 1); \
       u32 *block_ptr = rom_branch_hash[hash_target];                          \
       u32 **block_ptr_address = rom_branch_hash + hash_target;                \
                                                                               \
       while (block_ptr != NULL)                                               \
       {                                                                       \
-        if (block_ptr[0] == pc)                                               \
+        if (block_ptr[0] == key)                                               \
         {                                                                     \
           block_address = (u8 *)(block_ptr + 2) + block_prologue_size;        \
           break;                                                              \
@@ -2751,14 +2754,14 @@ static void thumb_flag_status(BlockDataThumbType *block_data, u16 opcode)
       }                                                                       \
                                                                               \
       if (block_ptr == NULL)                                                  \
-      {                                                                       \
+      {                                                                         \
         __label__ redo;                                                       \
         u8 *translation_result;                                               \
                                                                               \
         redo:                                                                 \
                                                                               \
         translation_recursion_level++;                                        \
-        ((u32 *)readonly_next_code)[0] = pc;                                  \
+        ((u32 *)readonly_next_code)[0] = key;                                  \
         ((u32 **)readonly_next_code)[1] = NULL;                               \
         *block_ptr_address = (u32 *)readonly_next_code;                       \
         readonly_next_code += sizeof(u32 *) + sizeof(u32 **);                 \

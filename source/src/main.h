@@ -23,10 +23,11 @@
 
 
 // video scale type
-#define SCALED_NONE   0
-#define SCALED_X15_GU 1
-#define SCALED_X15_SW 2
-#define SCALED_USER   3
+#define SCALED_NONE    0
+#define SCALED_X15_GU  1
+#define SCALED_X15_SW  2
+#define SCALED_USER    3
+#define SCALED_16X9_GU 4
 
 // video filter type
 #define FILTER_NEAREST  0

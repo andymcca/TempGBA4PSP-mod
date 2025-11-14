@@ -159,6 +159,7 @@ typedef u32 FIXED08_24;
 #include "cpu.h"
 #include "memory.h"
 #include "video.h"
+#include "psp_video.h"
 #include "input.h"
 #include "sound.h"
 #include "main.h"

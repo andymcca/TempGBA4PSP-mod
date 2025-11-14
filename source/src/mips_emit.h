@@ -1701,11 +1701,19 @@ u32 execute_store_cpsr_body(u32 _cpsr, u32 store_mask)
 {
   if ((store_mask & 0xFF) != 0)
   {
-    set_cpu_mode(cpu_modes[_cpsr & 0x1F]);
-
-    if (((pIO_REG(REG_IE) & pIO_REG(REG_IF)) != 0) && GBA_IME_STATE && ARM_IRQ_STATE)
+    u32 mode_bits = _cpsr & 0x1F;
+    CPU_MODE_TYPE new_mode = cpu_modes[mode_bits];
+    
+    // Validate that the mode is valid before changing
+    // If invalid, don't change mode (user mode can't change mode anyway)
+    if (new_mode != MODE_INVALID)
     {
-      return 1;
+      set_cpu_mode(new_mode);
+
+      if (((pIO_REG(REG_IE) & pIO_REG(REG_IF)) != 0) && GBA_IME_STATE && ARM_IRQ_STATE)
+      {
+        return 1;
+      }
     }
   }
 
@@ -1891,14 +1899,15 @@ void force_user_mode_body(CPU_MODE_TYPE cpu_mode, CPU_MODE_TYPE new_mode)
   generate_load_reg_pc(reg_a1, i, 12);                                        \
   generate_function_call_swap_delay(execute_aligned_store32);                 \
 
-#define arm_block_memory_final_load()                                         \
+#define arm_block_memory_final_load(writeback_type)                           \
   generate_load_pc(reg_a1, (pc + 8));                                         \
   generate_function_call_swap_delay(execute_load_u32);                        \
   generate_store_reg(reg_rv, i);                                              \
 
-#define arm_block_memory_final_store()                                        \
+#define arm_block_memory_final_store(writeback_type)                          \
   generate_load_pc(reg_a2, (pc + 4));                                         \
   generate_load_reg_pc(reg_a1, i, 12);                                        \
+  arm_block_memory_writeback_post_store(writeback_type);                      \
   mips_emit_jal(mips_absolute_offset(execute_store_u32));                     \
   generate_cycle_update_force();                                              \
 
@@ -1978,30 +1987,28 @@ void force_user_mode_body(CPU_MODE_TYPE cpu_mode, CPU_MODE_TYPE new_mode)
 
 #define arm_block_memory_address_load(offset_type, writeback_type)            \
   arm_block_memory_address_offset_##offset_type();                            \
-  if (((reg_list >> rn) & 0x01) == 0)                                         \
-  {                                                                           \
-    arm_block_memory_address_writeback_##writeback_type();                    \
-    mips_emit_addu(arm_to_mips_reg[rn], base_reg, reg_zero);                  \
-  }                                                                           \
 
 #define arm_block_memory_address_store(offset_type, writeback_type)           \
   arm_block_memory_address_offset_##offset_type();                            \
-  arm_block_memory_address_writeback_##writeback_type();                      \
 
 #define arm_block_memory_writeback_no()
 
 #define arm_block_memory_writeback_up()                                       \
-  if (offset == 0)                                                            \
-  {                                                                           \
-    mips_emit_addu(arm_to_mips_reg[rn], base_reg, reg_zero);                  \
-  }                                                                           \
+  mips_emit_addiu(base_reg, base_reg, (word_bit_count(reg_list) << 2))        \
 
 #define arm_block_memory_writeback_down()                                     \
-  arm_block_memory_writeback_up()                                             \
+  mips_emit_addiu(base_reg, base_reg, (-(word_bit_count(reg_list) << 2)))     \
 
-#define arm_block_memory_writeback_load(writeback_type)                       \
+// Only emit writeback if the register is not in the list
+#define arm_block_memory_writeback_post_load(writeback_type)
+#define arm_block_memory_writeback_pre_load(writeback_type)                   \
+  if(!((reg_list >> rn) & 0x01))                                              \
+  {                                                                           \
+    arm_block_memory_writeback_##writeback_type();                            \
+  }                                                                           \
 
-#define arm_block_memory_writeback_store(writeback_type)                      \
+#define arm_block_memory_writeback_pre_store(writeback_type)
+#define arm_block_memory_writeback_post_store(writeback_type)                 \
   arm_block_memory_writeback_##writeback_type()                               \
 
 #define arm_block_memory(access_type, offset_type, writeback_type, s_bit)     \
@@ -2013,6 +2020,7 @@ void force_user_mode_body(CPU_MODE_TYPE cpu_mode, CPU_MODE_TYPE new_mode)
                                                                               \
   arm_block_memory_force_user_##s_bit##_##access_type##_prologue();           \
   arm_block_memory_address_##access_type(offset_type, writeback_type);        \
+  arm_block_memory_writeback_pre_##access_type(writeback_type);               \
                                                                               \
   if ((rn == REG_SP) && ((iwram_stack_optimize & option_stack_optimize) != 0))\
   {                                                                           \
@@ -2026,11 +2034,11 @@ void force_user_mode_body(CPU_MODE_TYPE cpu_mode, CPU_MODE_TYPE new_mode)
       {                                                                       \
         cycle_count++;                                                        \
         arm_block_memory_sp_##access_type();                                  \
-        arm_block_memory_writeback_##access_type(writeback_type);             \
         offset += 4;                                                          \
       }                                                                       \
     }                                                                         \
                                                                               \
+    arm_block_memory_writeback_post_##access_type(writeback_type);            \
     arm_block_memory_sp_adjust_pc_##access_type(s_bit);                       \
   }                                                                           \
   else                                                                        \
@@ -2046,12 +2054,11 @@ void force_user_mode_body(CPU_MODE_TYPE cpu_mode, CPU_MODE_TYPE new_mode)
         if ((reg_list & ~((2 << i) - 1)) != 0)                                \
         {                                                                     \
           arm_block_memory_##access_type();                                   \
-          arm_block_memory_writeback_##access_type(writeback_type);           \
           offset += 4;                                                        \
         }                                                                     \
         else                                                                  \
         {                                                                     \
-          arm_block_memory_final_##access_type();                             \
+          arm_block_memory_final_##access_type(writeback_type);               \
           break;                                                              \
         }                                                                     \
       }                                                                       \
