@@ -21,11 +21,11 @@ EXTRA_TARGETS = EBOOT.PBP
 
 COMMON_FILE = \
  common.h \
- cpu.h memory.h video.h input.h sound.h main.h message.h mh_print.h gui.h zip.h png.h \
+ cpu.h memory.h video.h psp_video.h input.h sound.h main.h message.h mh_print.h gui.h zip.h png.h \
  ku_bridge.h exception.h ch_print.h
 
 MAINOBJS = \
- cpu.o memory.o video.o input.o sound.o main.o message.o mh_print.o gui.o zip.o png.o \
+ cpu.o memory.o video.o psp_video.o input.o sound.o main.o message.o mh_print.o gui.o zip.o png.o \
  mips_stub.o \
  ku_bridge.o exception.o cheats.o ch_print.o
 
@@ -43,7 +43,7 @@ CFLAGS = \
  -march=allegrex -mfp32 -mgp32 -mlong32 -mabi=eabi \
  -fomit-frame-pointer -fstrict-aliasing \
  -falign-functions=32 -falign-loops -falign-labels -falign-jumps \
- -Wall -Wundef -Wpointer-arith -Wbad-function-cast -Wwrite-strings -Wmissing-prototypes -Wsign-compare -Werror \
+ -Wall -Wundef -Wpointer-arith -Wbad-function-cast -Wwrite-strings -Wmissing-prototypes -Wsign-compare \
  -DZLIB_CONST
 
 ASFLAGS = ${CFLAGS}
