@@ -9,7 +9,7 @@
 	"ROM Buffer %2dMB",
 
     // MSG_BROWSER_HELP
-    "○:Select  ×:Menu  □:" FONT_UP_DIRECTORY_GBK,
+    "[O]:Select  [X]:Menu  [SQUARE]: [UP]",
 
     // MSG_MENU_DATE_FMT_0
     "%4d/%2d/%2d %-3s %2d:%02d",
@@ -27,7 +27,7 @@
     "Save state : SLOT %d",
 
     // MSG_MAIN_MENU_2
-    "Savestate details " FONT_R_TRIGGER_GBK,
+    "Savestate details  [R]",
 
     // MSG_MAIN_MENU_3
     "Screen capture : %s",
@@ -45,7 +45,7 @@
     "Cheats options",
 
     // MSG_MAIN_MENU_7
-    "Load game " FONT_L_TRIGGER_GBK,
+    "Load game  [L]",
 
     // MSG_MAIN_MENU_8
     "Reset",
@@ -60,43 +60,43 @@
     "Exit TempGBA",
 
     // MSG_MAIN_MENU_HELP_0
-    "○:Load  " FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Select slot",
+    "[O]:Load   [<] [>] :Select slot",
 
     // MSG_MAIN_MENU_HELP_1
-    "○:Save  " FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Select slot",
+    "[O]:Save   [<] [>] :Select slot",
 
     // MSG_MAIN_MENU_HELP_2
-    "○:Sub menu  " FONT_R_TRIGGER_GBK ":Shortcut key",
+    "[O]:Sub menu   [R] :Shortcut key",
 
     // MSG_MAIN_MENU_HELP_3
-    "○:Save Image  " FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Select image format",
+    "[O]:Save Image   [<] [>] :Select image format",
 
     // MSG_MAIN_MENU_HELP_4
-    "○:Sub menu",
+    "[O]:Sub menu",
 
     // MSG_MAIN_MENU_HELP_5
-    "○:Sub menu",
+    "[O]:Sub menu",
 
     // MSG_MAIN_MENU_HELP_6
-    "○:Sub menu",
+    "[O]:Sub menu",
 
     // MSG_MAIN_MENU_HELP_CHEAT
-    "○:Select to manage cheats",
+    "[O]:Select to manage cheats",
 
     // MSG_MAIN_MENU_HELP_7
-    "○:File browser  " FONT_L_TRIGGER_GBK ":Shortcut key",
+    "[O]:File browser   [L] :Shortcut key",
 
     // MSG_MAIN_MENU_HELP_8
-    "○:Reset game",
+    "[O]:Reset game",
 
     // MSG_MAIN_MENU_HELP_9
-    "○:Return to game",
+    "[O]:Return to game",
 
     // MSG_MAIN_MENU_HELP_10
-    "○:Sleep mode",
+    "[O]:Sleep mode",
 
     // MSG_MAIN_MENU_HELP_11
-    "○:Exit",
+    "[O]:Exit",
 
     // MSG_OPTION_MENU_TITLE
     "Emulator options",
@@ -144,46 +144,46 @@
     "Back",
 
     // MSG_OPTION_MENU_HELP_0
-    FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Select   all",
+    "[<] [>] :Select   all",
 
     // MSG_OPTION_MENU_HELP_1
-    FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Select   all",
+    "[<] [>] :Select   all",
 
     // MSG_OPTION_MENU_HELP_2
-    FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Select   all",
+    "[<] [>] :Select   all",
 
     // MSG_OPTION_MENU_HELP_SHOW_FPS
-    FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Select   emulator",
+    "[<] [>] :Select   emulator",
 
     // MSG_OPTION_MENU_HELP_3
-    FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Select   all",
+    "[<] [>] :Select   all",
 
     // MSG_OPTION_MENU_HELP_4
-    FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Select   all",
+    "[<] [>] :Select   all",
 
     // MSG_OPTION_MENU_HELP_5
-    FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Select   all",
+    "[<] [>] :Select   all",
 
     // MSG_OPTION_MENU_HELP_6
-    FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Select   all",
+    "[<] [>] :Select   all",
 
     // MSG_OPTION_MENU_HELP_7
-    FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Select   emulator",
+    "[<] [>] :Select   emulator",
 
     // MSG_OPTION_MENU_HELP_8
-    FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Select   emulator",
+    "[<] [>] :Select   emulator",
 
     // MSG_OPTION_MENU_HELP_9
-    FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Select   emulator",
+    "[<] [>] :Select   emulator",
 
     // MSG_OPTION_MENU_HELP_10
-    FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Select   emulator",
+    "[<] [>] :Select   emulator",
 
     // MSG_OPTION_MENU_HELP_DEFAULT
-    "○:Restore default settings",
+    "[O]:Restore default settings",
 
     // MSG_OPTION_MENU_HELP_11
-    "○:Main menu",
+    "[O]:Main menu",
 
     // MSG_STATE_MENU_DATE_FMT_0
     "%4d/%2d/%2d %-3s %2d:%02d:%02d",
@@ -213,46 +213,46 @@
     "Back",
 
     // MSG_STATE_MENU_HELP_0
-    "○:Execute  " FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Select",
+    "[O]:Execute   [<] [>] :Select",
 
     // MSG_STATE_MENU_HELP_1
-    "○:File browser",
+    "[O]:File browser",
 
     // MSG_STATE_MENU_HELP_2
-    "○:Main menu",
+    "[O]:Main menu",
 
     // MSG_PAD_MENU_TITLE
     "Gamepad config",
 
     // MSG_PAD_MENU_0
-    "↑　　 : %s",
+    "[UP]   : %s",
 
     // MSG_PAD_MENU_1
-    "↓　　 : %s",
+    "[DOWN]   : %s",
 
     // MSG_PAD_MENU_2
-    "←　　 : %s",
+    "[LEFT]   : %s",
 
     // MSG_PAD_MENU_3
-    "→　　 : %s",
+    "[RIGHT]   : %s",
 
     // MSG_PAD_MENU_4
-    "○　　 : %s",
+    "[O]   : %s",
 
     // MSG_PAD_MENU_5
-    "×　　 : %s",
+    "[X]   : %s",
 
     // MSG_PAD_MENU_6
-    "□　　 : %s",
+    "[SQUARE]   : %s",
 
     // MSG_PAD_MENU_7
-    "△　　 : %s",
+    "[TRIANGLE]   : %s",
 
     // MSG_PAD_MENU_8
-    FONT_L_TRIGGER_GBK "　　 : %s",
+    "[L]    : %s",
 
     // MSG_PAD_MENU_9
-    FONT_R_TRIGGER_GBK "　　 : %s",
+    "[R]    : %s",
 
     // MSG_PAD_MENU_10
     "START  : %s",
@@ -264,24 +264,24 @@
     "Back",
 
     // MSG_PAD_MENU_HELP_0
-    FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Select",
+    "[<] [>] :Select",
 
     // MSG_PAD_MENU_HELP_1
-    "○:Main menu",
+    "[O]:Main menu",
 
     //PADの設定 コンフィグ
 
     // MSG_PAD_MENU_CFG_0
-    "↑",
+    "[UP]",
 
     // MSG_PAD_MENU_CFG_1
-    "↓",
+    "[DOWN]",
 
     // MSG_PAD_MENU_CFG_2
-    "←",
+    "[LEFT]",
 
     // MSG_PAD_MENU_CFG_3
-    "→",
+    "[RIGHT]",
 
     // MSG_PAD_MENU_CFG_4
     "A",
@@ -335,16 +335,16 @@
     "Analog stick config",
 
     // MSG_A_PAD_MENU_0
-    "Analog ↑ : %s",
+    "Analog [UP] : %s",
 
     // MSG_A_PAD_MENU_1
-    "Analog ↓ : %s",
+    "Analog [DOWN] : %s",
 
     // MSG_A_PAD_MENU_2
-    "Analog ← : %s",
+    "Analog [LEFT] : %s",
 
     // MSG_A_PAD_MENU_3
-    "Analog → : %s",
+    "Analog [RIGHT] : %s",
 
     // MSG_A_PAD_MENU_4
     "Enable analog input : %s",
@@ -356,13 +356,13 @@
     "Back",
 
     // MSG_A_PAD_MENU_HELP_0
-    FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Select",
+    "[<] [>] :Select",
 
     // MSG_A_PAD_MENU_HELP_1
-    FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Select",
+    "[<] [>] :Select",
 
     // MSG_A_PAD_MENU_HELP_2
-    "○:Main menu",
+    "[O]:Main menu",
 
 	//MSG_CHEAT_MENU_TITLE,
 	"Cheats options",
@@ -374,7 +374,7 @@
 	"%%s %2d: %s",
 
 	//MSG_CHEAT_MENU_1,
-	"Load Cheat File  " FONT_L_TRIGGER_GBK,
+	"Load Cheat File   [L]",
 
 	//MSG_CHEAT_MENU_2,
 	"Back",
@@ -383,16 +383,16 @@
 	"cheat page: %d",
 
 	//MSG_CHEAT_MENU_HELP_0,
-	FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Activate/deactivate",
+    "[<] [>] :Activate/deactivate",
 
 	//MSG_CHEAT_MENU_HELP_1,
-	"○:Cheat file browser  "FONT_L_TRIGGER_GBK ":Shortcut key",
+	"[O]:Cheat file browser  [L] :Shortcut key",
 
 	//MSG_CHEAT_MENU_HELP_2,
-	"○:Main menu",
+	"[O]:Main menu",
 
 	//MSG_CHEAT_MENU_HELP_3,
-	FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Change page",
+    "[<] [>] :Change page",
 
     // MSG_NON_LOAD_GAME
     "Game is not loaded",
@@ -462,6 +462,9 @@
 
     // MSG_SCN_SCALED_USER
     "USER GU",
+
+    // MSG_SCN_SCALED_16X9_GU
+    "16:9 GU",
 
     // MSG_LANG_JAPANESE
     "Japanese",
@@ -1008,6 +1011,9 @@
     // MSG_SCN_SCALED_USER
     "指定 GU",
 
+    // MSG_SCN_SCALED_16X9_GU
+    "16:9 GU",
+
     // MSG_LANG_JAPANESE
     "日语",
 
@@ -1552,6 +1558,9 @@
 
     // MSG_SCN_SCALED_USER
     "指定 GU",
+
+    // MSG_SCN_SCALED_16X9_GU
+    "16:9 GU",
 
     // MSG_LANG_JAPANESE
     "日語",
