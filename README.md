@@ -1,13 +1,15 @@
-# TempGBA4PSP-mod
+# TempGBA4PSP-mod (2025 Build)
 
-Based on this version (TempGBA4PSP-26731020), http://www1.axfc.net/uploader/so/3063963
+Based on phoe-nix' Github repo.
 
-Added gpsp kai 's cheats function.
-
-Added Chinese language.
-
-Added restore function.
-
-New menu icon.
-
-Impoted code from TempGBA-mod-dstwo-26750220.
+- Added a 16:9 Full Screen option
+- Fixed Menu text and Game -> Menu crashes
+- Fixed a few games that have never worked previously -
+-   NBA Jam 2002
+-   Colin Mcrae Rally
+-   Banjo Kazooie
+-   Starsky and Hutch
+-   Balatro (https://github.com/cellos51/balatro-gba)
+-   ....and probably a few more!
+- Swapped X/O buttons around
+- Couple of minor fixes to make it work under PPSSPP (including w/ HW Rendering)
