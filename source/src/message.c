@@ -34,7 +34,7 @@ const char *message[4][MSG_END] =
 	"ROM Buffer %2dMB",
 
     // MSG_BROWSER_HELP
-    "ï¿½ï¿½:ï¿½Iï¿½ï¿½  ï¿½~:ï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[  ï¿½ï¿½:" FONT_UP_DIRECTORY,
+    "‘½ï¿½:ï¿½Iï¿½ï¿½  ï¿½˜:ï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[  ï¿½ï¿½:" FONT_UP_DIRECTORY,
 
     // MSG_MENU_DATE_FMT_0
     "%4d/%2d/%2d %-4s %2d:%02d",
@@ -52,7 +52,7 @@ const char *message[4][MSG_END] =
     "ï¿½Zï¿½[ï¿½uï¿½Xï¿½eï¿½[ï¿½g : ï¿½Xï¿½ï¿½ï¿½bï¿½g %d",
 
     // MSG_MAIN_MENU_2
-    "ï¿½Xï¿½eï¿½[ï¿½gï¿½Zï¿½[ï¿½uï¿½gï¿½ï¿½ " FONT_R_TRIGGER,
+    "ï¿½Xï¿½eï¿½[ï¿½gï¿½Zï¿½[ï¿½uï¿½gï¿½ï¿½ " "\x82\xAB",
 
     // MSG_MAIN_MENU_3
     "ï¿½Xï¿½Nï¿½ï¿½ï¿½[ï¿½ï¿½ ï¿½Vï¿½ï¿½ï¿½bï¿½g: %s",
@@ -70,7 +70,7 @@ const char *message[4][MSG_END] =
     "ï¿½`ï¿½[ï¿½gï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[",
 
     // MSG_MAIN_MENU_7
-    "ï¿½Qï¿½[ï¿½ï¿½ï¿½Ìƒï¿½ï¿½[ï¿½h " FONT_L_TRIGGER,
+    "ï¿½Qï¿½[ï¿½ï¿½ï¿½Ìƒï¿½ï¿½[ï¿½h " "\x82\xB2",
 
     // MSG_MAIN_MENU_8
     "ï¿½ï¿½ï¿½Zï¿½bï¿½g",
@@ -85,43 +85,43 @@ const char *message[4][MSG_END] =
     "TempGBAï¿½ÌIï¿½ï¿½",
 
     // MSG_MAIN_MENU_HELP_0
-    "ï¿½ï¿½:ï¿½ï¿½ï¿½[ï¿½h  " FONT_CURSOR_LEFT FONT_CURSOR_RIGHT ":ï¿½Xï¿½ï¿½ï¿½bï¿½gï¿½Iï¿½ï¿½",
+    "‘½ï¿½:ï¿½ï¿½ï¿½[ï¿½h  " "\x81\xA8\x81\xA9" ":ï¿½Xï¿½ï¿½ï¿½bï¿½gï¿½Iï¿½ï¿½",
 
     // MSG_MAIN_MENU_HELP_1
-    "ï¿½ï¿½:ï¿½Zï¿½[ï¿½u  " FONT_CURSOR_LEFT FONT_CURSOR_RIGHT ":ï¿½Xï¿½ï¿½ï¿½bï¿½gï¿½Iï¿½ï¿½",
+    "‘½ï¿½:ï¿½Zï¿½[ï¿½u  " "\x81\xA8\x81\xA9" ":ï¿½Xï¿½ï¿½ï¿½bï¿½gï¿½Iï¿½ï¿½",
 
     // MSG_MAIN_MENU_HELP_2
-    "ï¿½ï¿½:ï¿½Tï¿½uï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[  " FONT_R_TRIGGER ":ï¿½Vï¿½ï¿½ï¿½[ï¿½gï¿½Jï¿½bï¿½g",
+    "‘½ï¿½:ï¿½Tï¿½uï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[  " "\x82\xAB" ":ï¿½Vï¿½ï¿½ï¿½[ï¿½gï¿½Jï¿½bï¿½g",
 
     // MSG_MAIN_MENU_HELP_3
-    "ï¿½ï¿½:ï¿½Cï¿½ï¿½ï¿½[ï¿½Wï¿½Û‘ï¿½  " FONT_CURSOR_LEFT FONT_CURSOR_RIGHT ":ï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½Iï¿½ï¿½",
+    "‘½ï¿½:ï¿½Cï¿½ï¿½ï¿½[ï¿½Wï¿½Û‘ï¿½  " "\x81\xA8\x81\xA9" ":ï¿½tï¿½Hï¿½[ï¿½}ï¿½bï¿½gï¿½Iï¿½ï¿½",
 
     // MSG_MAIN_MENU_HELP_4
-    "ï¿½ï¿½:ï¿½Tï¿½uï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[",
+    "‘½ï¿½:ï¿½Tï¿½uï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[",
 
     // MSG_MAIN_MENU_HELP_5
-    "ï¿½ï¿½:ï¿½Tï¿½uï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[",
+    "‘½ï¿½:ï¿½Tï¿½uï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[",
 
     // MSG_MAIN_MENU_HELP_6
-    "ï¿½ï¿½:ï¿½Tï¿½uï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[",
+    "‘½ï¿½:ï¿½Tï¿½uï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[",
 
     // MSG_MAIN_MENU_HELP_CHEAT
-    "ï¿½ï¿½:ï¿½`ï¿½[ï¿½gï¿½ï¿½ÏXï¿½ï¿½ï¿½Ü‚ï¿½",
+    "‘½ï¿½:ï¿½`ï¿½[ï¿½gï¿½ï¿½ÏXï¿½ï¿½ï¿½Ü‚ï¿½",
 
     // MSG_MAIN_MENU_HELP_7
-    "ï¿½ï¿½:ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½uï¿½ï¿½ï¿½Eï¿½U  " FONT_L_TRIGGER ":ï¿½Vï¿½ï¿½ï¿½[ï¿½gï¿½Jï¿½bï¿½g",
+    "‘½ï¿½:ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½uï¿½ï¿½ï¿½Eï¿½U  " "\x82\xB2" ":ï¿½Vï¿½ï¿½ï¿½[ï¿½gï¿½Jï¿½bï¿½g",
 
     // MSG_MAIN_MENU_HELP_8
-    "ï¿½ï¿½:ï¿½Qï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Zï¿½bï¿½g",
+    "‘½ï¿½:ï¿½Qï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Zï¿½bï¿½g",
 
     // MSG_MAIN_MENU_HELP_9
-    "ï¿½ï¿½:ï¿½Qï¿½[ï¿½ï¿½ï¿½É–ß‚ï¿½",
+    "‘½ï¿½:ï¿½Qï¿½[ï¿½ï¿½ï¿½É–ß‚ï¿½",
 
     // MSG_MAIN_MENU_HELP_10
-    "ï¿½ï¿½:ï¿½Xï¿½ï¿½ï¿½[ï¿½v ï¿½ï¿½ï¿½[ï¿½h",
+    "‘½ï¿½:ï¿½Xï¿½ï¿½ï¿½[ï¿½v ï¿½ï¿½ï¿½[ï¿½h",
 
     // MSG_MAIN_MENU_HELP_11
-    "ï¿½ï¿½:ï¿½Iï¿½ï¿½",
+    "‘½ï¿½:ï¿½Iï¿½ï¿½",
 
     // MSG_OPTION_MENU_TITLE
 	#include "text/option_menu_t.h"
@@ -169,40 +169,40 @@ const char *message[4][MSG_END] =
     "ï¿½ß‚ï¿½",
 
     // MSG_OPTION_MENU_HELP_0
-    FONT_CURSOR_LEFT FONT_CURSOR_RIGHT ":ï¿½Iï¿½ï¿½   ï¿½ï¿½ï¿½ï¿½",
+    "\x81\xA8\x81\xA9" ":ï¿½Iï¿½ï¿½   ï¿½ï¿½ï¿½ï¿½",
 
     // MSG_OPTION_MENU_HELP_1
-    FONT_CURSOR_LEFT FONT_CURSOR_RIGHT ":ï¿½Iï¿½ï¿½   ï¿½ï¿½ï¿½ï¿½",
+    "\x81\xA8\x81\xA9" ":ï¿½Iï¿½ï¿½   ï¿½ï¿½ï¿½ï¿½",
 
     // MSG_OPTION_MENU_HELP_2
-    FONT_CURSOR_LEFT FONT_CURSOR_RIGHT ":ï¿½Iï¿½ï¿½   ï¿½ï¿½ï¿½ï¿½",
+    "\x81\xA8\x81\xA9" ":ï¿½Iï¿½ï¿½   ï¿½ï¿½ï¿½ï¿½",
 
     // MSG_OPTION_MENU_HELP_SHOW_FPS
-    FONT_CURSOR_LEFT FONT_CURSOR_RIGHT ":ï¿½Iï¿½ï¿½   ï¿½Gï¿½~ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^",
+    "\x81\xA8\x81\xA9" ":ï¿½Iï¿½ï¿½   ï¿½Gï¿½~ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^",
 
     // MSG_OPTION_MENU_HELP_3
-    FONT_CURSOR_LEFT FONT_CURSOR_RIGHT ":ï¿½Iï¿½ï¿½   ï¿½ï¿½ï¿½ï¿½",
+    "\x81\xA8\x81\xA9" ":ï¿½Iï¿½ï¿½   ï¿½ï¿½ï¿½ï¿½",
 
     // MSG_OPTION_MENU_HELP_4
-    FONT_CURSOR_LEFT FONT_CURSOR_RIGHT ":ï¿½Iï¿½ï¿½   ï¿½ï¿½ï¿½ï¿½",
+    "\x81\xA8\x81\xA9" ":ï¿½Iï¿½ï¿½   ï¿½ï¿½ï¿½ï¿½",
 
     // MSG_OPTION_MENU_HELP_5
-    FONT_CURSOR_LEFT FONT_CURSOR_RIGHT ":ï¿½Iï¿½ï¿½   ï¿½ï¿½ï¿½ï¿½",
+    "\x81\xA8\x81\xA9" ":ï¿½Iï¿½ï¿½   ï¿½ï¿½ï¿½ï¿½",
 
     // MSG_OPTION_MENU_HELP_6
-    FONT_CURSOR_LEFT FONT_CURSOR_RIGHT ":ï¿½Iï¿½ï¿½   ï¿½ï¿½ï¿½ï¿½",
+    "\x81\xA8\x81\xA9" ":ï¿½Iï¿½ï¿½   ï¿½ï¿½ï¿½ï¿½",
 
     // MSG_OPTION_MENU_HELP_7
-    FONT_CURSOR_LEFT FONT_CURSOR_RIGHT ":ï¿½Iï¿½ï¿½   ï¿½Gï¿½~ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^",
+    "\x81\xA8\x81\xA9" ":ï¿½Iï¿½ï¿½   ï¿½Gï¿½~ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^",
 
     // MSG_OPTION_MENU_HELP_8
-    FONT_CURSOR_LEFT FONT_CURSOR_RIGHT ":ï¿½Iï¿½ï¿½   ï¿½Gï¿½~ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^",
+    "\x81\xA8\x81\xA9" ":ï¿½Iï¿½ï¿½   ï¿½Gï¿½~ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^",
 
     // MSG_OPTION_MENU_HELP_9
-    FONT_CURSOR_LEFT FONT_CURSOR_RIGHT ":ï¿½Iï¿½ï¿½   ï¿½Gï¿½~ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^",
+    "\x81\xA8\x81\xA9" ":ï¿½Iï¿½ï¿½   ï¿½Gï¿½~ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^",
 
     // MSG_OPTION_MENU_HELP_10
-    FONT_CURSOR_LEFT FONT_CURSOR_RIGHT ":ï¿½Iï¿½ï¿½   ï¿½Gï¿½~ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^",
+    "\x81\xA8\x81\xA9" ":ï¿½Iï¿½ï¿½   ï¿½Gï¿½~ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^",
 
     // MSG_OPTION_MENU_DEFAULT
     "ï¿½ï¿½:ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½",
@@ -238,7 +238,7 @@ const char *message[4][MSG_END] =
     "ï¿½ß‚ï¿½",
 
     // MSG_STATE_MENU_HELP_0
-    "ï¿½ï¿½:ï¿½ï¿½ï¿½s  " FONT_CURSOR_LEFT FONT_CURSOR_RIGHT ":ï¿½Iï¿½ï¿½",
+    "ï¿½ï¿½:ï¿½ï¿½ï¿½s  " "\x81\xA8\x81\xA9" ":ï¿½Iï¿½ï¿½",
 
     // MSG_STATE_MENU_HELP_1
     "ï¿½ï¿½:ï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½uï¿½ï¿½ï¿½Eï¿½U",
@@ -274,10 +274,10 @@ const char *message[4][MSG_END] =
     "ï¿½ï¿½ï¿½@ï¿½@ : %s",
 
     // MSG_PAD_MENU_8
-    FONT_L_TRIGGER "ï¿½@ï¿½@ : %s",
+    "\x82\xB2" "ï¿½@ï¿½@ : %s",
 
     // MSG_PAD_MENU_9
-    FONT_R_TRIGGER "ï¿½@ï¿½@ : %s",
+    "\x82\xAB" "ï¿½@ï¿½@ : %s",
 
     // MSG_PAD_MENU_10
     "START  : %s",
@@ -289,7 +289,7 @@ const char *message[4][MSG_END] =
     "ï¿½ß‚ï¿½",
 
     // MSG_PAD_MENU_HELP_0
-    FONT_CURSOR_LEFT FONT_CURSOR_RIGHT ":ï¿½Iï¿½ï¿½",
+    "\x81\xA8\x81\xA9" ":ï¿½Iï¿½ï¿½",
 
     // MSG_PAD_MENU_HELP_1
     "ï¿½ï¿½:ï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[",
@@ -381,10 +381,10 @@ const char *message[4][MSG_END] =
     "ï¿½ß‚ï¿½",
 
     // MSG_A_PAD_MENU_HELP_0
-    FONT_CURSOR_LEFT FONT_CURSOR_RIGHT ":ï¿½Iï¿½ï¿½",
+    "\x81\xA8\x81\xA9" ":ï¿½Iï¿½ï¿½",
 
     // MSG_A_PAD_MENU_HELP_1
-    FONT_CURSOR_LEFT FONT_CURSOR_RIGHT ":ï¿½Iï¿½ï¿½",
+    "\x81\xA8\x81\xA9" ":ï¿½Iï¿½ï¿½",
 
     // MSG_A_PAD_MENU_HELP_2
     "ï¿½ï¿½:ï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[",
@@ -399,7 +399,7 @@ const char *message[4][MSG_END] =
 	"%%s %2d: %s",
 
 	//MSG_CHEAT_MENU_1,
-	"ï¿½`ï¿½[ï¿½gï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½Ìƒï¿½ï¿½[ï¿½h  " FONT_L_TRIGGER,
+	"ï¿½`ï¿½[ï¿½gï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½Ìƒï¿½ï¿½[ï¿½h  " "\x82\xB2",
 
 	//MSG_CHEAT_MENU_2,
 	"ï¿½ß‚ï¿½",
@@ -408,16 +408,16 @@ const char *message[4][MSG_END] =
 	"ï¿½`ï¿½[ï¿½gï¿½yï¿½[ï¿½W: %d",
 
 	//MSG_CHEAT_MENU_HELP_0,
-	FONT_CURSOR_LEFT FONT_CURSOR_RIGHT ":ï¿½Iï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Rï¿½[ï¿½hï¿½Ì—Lï¿½ï¿½ï¿½^ï¿½ï¿½ï¿½ï¿½ï¿½ÌØ‘ï¿½",
+	"\x81\xA8\x81\xA9" ":ï¿½Iï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Rï¿½[ï¿½hï¿½Ì—Lï¿½ï¿½ï¿½^ï¿½ï¿½ï¿½ï¿½ï¿½ÌØ‘ï¿½",
 
 	//MSG_CHEAT_MENU_HELP_1,
-	"ï¿½ï¿½:ï¿½`ï¿½[ï¿½gï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½hï¿½ï¿½ï¿½Ü‚ï¿½  " FONT_L_TRIGGER ":ï¿½Vï¿½ï¿½ï¿½[ï¿½gï¿½Jï¿½bï¿½g",
+	"ï¿½ï¿½:ï¿½`ï¿½[ï¿½gï¿½tï¿½@ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½hï¿½ï¿½ï¿½Ü‚ï¿½  " "\x82\xB2" ":ï¿½Vï¿½ï¿½ï¿½[ï¿½gï¿½Jï¿½bï¿½g",
 
 	//MSG_CHEAT_MENU_HELP_2,
 	"ï¿½ï¿½:ï¿½ï¿½ï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½jï¿½ï¿½ï¿½[ï¿½É–ß‚ï¿½Ü‚ï¿½",
 
 	//MSG_CHEAT_MENU_HELP_3,
-	FONT_CURSOR_LEFT FONT_CURSOR_RIGHT ":ï¿½yï¿½[ï¿½Wï¿½ï¿½ÏX",
+	"\x81\xA8\x81\xA9" ":ï¿½yï¿½[ï¿½Wï¿½ï¿½ÏX",
 
     // MSG_NON_LOAD_GAME
     "ï¿½Qï¿½[ï¿½ï¿½ï¿½Íƒï¿½ï¿½[ï¿½hï¿½ï¿½ï¿½ï¿½Ä‚ï¿½ï¿½Ü‚ï¿½ï¿½ï¿½",

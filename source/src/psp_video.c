@@ -312,6 +312,12 @@ u16 *copy_screen(void)
   u16 *p_src, *p_src0;
   u16 *p_dest;
 
+  // Wait for vblank and sync GPU/cache to ensure screen_texture is stable before copying
+  // This prevents crashes when menu is called during active gameplay
+  sceDisplayWaitVblankStart();
+  sceGuSync(0, GU_SYNC_FINISH);
+  sceKernelDcacheWritebackAll();
+
   copy = (u16 *)safe_malloc(GBA_SCREEN_SIZE);
 
   p_src0 = screen_texture;
