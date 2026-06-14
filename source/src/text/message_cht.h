@@ -120,7 +120,7 @@
   "幀跳過值  : %d",
 
   // MSG_OPTION_MENU_5
-  "CPU 時脈頻率   : %s",
+  "CPU 時脈頻率   : %d MHz",
 
   // MSG_OPTION_MENU_6
   "音量  : %s",
@@ -662,6 +662,9 @@
   // MSG_TOOLTIP_FRAMESKIP_VALUE
   "選擇要跳過多少幀 (*/10).",
 
+  // MSG_TOOLTIP_CPU_CLOCK
+  "所有機型 222-333 MHz。ARK-5：352、370、389、407、426、444、463 MHz。",
+
   // MSG_TOOLTIP_RAM_DYNAREC_MODE
   "全沖: 每次發生變更時，重新編譯所有 RAM.雖然安全，但速度較慢.\n部分不可重複使用: 僅重新編譯 RAM 中已變更的區塊.平衡.\n部分 + 重複使用: 若資料匹配，則保留該 RAM 區塊.速度快，但安全性較低.",
 
@@ -841,5 +844,11 @@
 
   // MSG_VOL_100
   "100",
+
+  // MSG_OPTION_MENU_SHOW_FPS_MHZ
+  "顯示 CPU MHz   : %s",
+
+  // MSG_OPTION_MENU_HELP_SHOW_FPS_MHZ
+  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":變更   " FONT_BTN_CROSS_GBK ":退出",
 
 },

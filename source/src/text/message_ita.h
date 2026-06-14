@@ -120,7 +120,7 @@
   "Valore frameskip     : %d",
 
   // MSG_OPTION_MENU_5
-  "Frequenza clock CPU  : %s",
+  "Frequenza clock CPU  : %d MHz",
 
   // MSG_OPTION_MENU_6
   "Volume suoni          : %s",
@@ -661,6 +661,9 @@
   // MSG_TOOLTIP_FRAMESKIP_VALUE
   "Seleziona quanti fotogrammi saltare (*/10).",
 
+  // MSG_TOOLTIP_CPU_CLOCK
+  "222-333 MHz su tutte le PSP. Con ARK-5: 352, 370, 389, 407, 426, 444, 463 MHz.",
+
   // MSG_TOOLTIP_RAM_DYNAREC_MODE
   "Scarico completo: Ricompila tutta la RAM quando c'e` un cambiamento.\n                  Sicuro, ma lento.\nParziale no riutilizzo: Ricompila solo il blocco di RAM cambiato. Bilanciato.\nParziale + riutilizzo: Tiene solo i blocchi di RAM i cui dati combaciano.\n                            Veloce, ma meno sicuro.",
 
@@ -840,5 +843,11 @@
 
   // MSG_VOL_100
   "100",
+
+  // MSG_OPTION_MENU_SHOW_FPS_MHZ
+  "Mostra CPU MHz        : %s",
+
+  // MSG_OPTION_MENU_HELP_SHOW_FPS_MHZ
+  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Cambia   " FONT_BTN_CROSS_GBK ":Esci",
 
 },

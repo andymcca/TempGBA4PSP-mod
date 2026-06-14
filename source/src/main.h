@@ -38,12 +38,6 @@
 #define FRAMESKIP_MANUAL 1
 #define FRAMESKIP_NONE   2
 
-// psp cpu clock frequency
-#define PSP_CLOCK_222 0
-#define PSP_CLOCK_266 1
-#define PSP_CLOCK_300 2
-#define PSP_CLOCK_333 3
-
 #define CONFIRMATION_NONE  0
 #define CONFIRMATION_CONT  1
 #define CONFIRMATION_QUIT  2
@@ -75,7 +69,6 @@ extern u32 option_language;
 extern u32 option_theme;
 extern u32 option_frameskip_type;
 extern u32 option_frameskip_value;
-extern u32 option_clock_speed;
 
 /* HBLANK IRQ scanline window (1-based, 0 = off). Either 0 disables the window. */
 extern u32 option_hblank_irq_window_start;
@@ -91,6 +84,7 @@ extern u32 sleep_flag;
 
 extern u32 synchronize_flag;
 extern u32 psp_fps_debug;
+extern u32 option_fps_show_mhz;
 
 extern u32 real_frame_count;
 extern u32 virtual_frame_count;
@@ -115,8 +109,6 @@ void change_ext(char *src, char *buffer, const char *extension);
 u64 ticker(void);
 u32 file_length(char *filename);
 
-int set_cpu_clock(u32 psp_clock);
-
 SceUID psp_fopen(const char *filename, const char *mode);
 void psp_fclose(SceUID filename_tag);
 
@@ -125,5 +117,7 @@ void *safe_malloc(size_t size);
 void main_write_mem_savestate(SceUID savestate_file);
 void main_read_savestate(SceUID savestate_file);
 
+
+#include "psp_clock.h"
 
 #endif /* MAIN_H */

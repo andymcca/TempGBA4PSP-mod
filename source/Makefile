@@ -25,7 +25,7 @@ COMMON_FILE = \
  ku_bridge.h exception.h ch_print.h
 
 MAINOBJS = \
- cpu.o memory.o video_dispatch.o video_cc_wrap.o video_old_wrap.o psp_video.o input.o sound.o main.o message.o mh_print.o gui.o zip.o png.o \
+ cpu.o memory.o video_dispatch.o video_cc_wrap.o video_old_wrap.o psp_video.o input.o sound.o main.o psp_clock.o systemctrl_imports.o message.o mh_print.o gui.o zip.o png.o \
  mips_stub.o video_blend_mips.o \
  ku_bridge.o exception.o cheats.o ch_print.o
 
@@ -48,7 +48,7 @@ CFLAGS = \
 
 CXXFLAGS = ${CFLAGS}
 
-ASFLAGS = ${CFLAGS}
+ASFLAGS = ${CFLAGS} -I${PSPSDK}/include
 
 INCDIR = SDK/include src src/zlib src/libpower
 LIBDIR = SDK/lib
