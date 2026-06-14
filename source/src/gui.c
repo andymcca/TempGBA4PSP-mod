@@ -29,8 +29,7 @@ extern u32 option_swap_confirm_buttons;
 #define GPSP_CONFIG_NUM_PRE_WINDOW_END  (19 + GPSP_CONFIG_NUM_GAMEPAD) // 35 words: + slot 18 = HBLANK cap, gamepad 19-34
 #define GPSP_CONFIG_NUM_PRE_VSYNC       (20 + GPSP_CONFIG_NUM_GAMEPAD) // 36 words: slots 18-19 HBLANK win, gamepad 20-35
 #define GPSP_CONFIG_NUM_PRE_SWAP_THEME  (21 + GPSP_CONFIG_NUM_GAMEPAD) // 37 words: slot 20 VSync, gamepad 21-36 (pre swap/theme slots)
-#define GPSP_CONFIG_NUM_PRE_FPS_MHZ     (23 + GPSP_CONFIG_NUM_GAMEPAD) // 39 words: pre FPS MHz slot
-#define GPSP_CONFIG_NUM                 (24 + GPSP_CONFIG_NUM_GAMEPAD) // 40 words: slot 23 FPS MHz, gamepad 24-39
+#define GPSP_CONFIG_NUM                 (23 + GPSP_CONFIG_NUM_GAMEPAD) // 39 words: slot 20 PSP VSync, slot 21 swap buttons, slot 22 themes, gamepad 23-38
 #define GPSP_CONFIG_NUM_LEGACY          (17 + GPSP_CONFIG_NUM_GAMEPAD) // before renderer option
 #define GPSP_GAME_CONFIG_NUM            (7 + 16)
 
@@ -175,6 +174,7 @@ static const char *update_backup_options[2];
 static const char *yes_no_options[2];
 static const char *on_off_options[2];
 static const char *enable_disable_options[2];
+static const char *clock_speed_options[4];
 static const char *sound_volume_options[11];
 static const char *image_format_options[2];
 static const char *video_renderer_options[2];
@@ -210,6 +210,11 @@ static void init_choice_arrays(void)
 
     enable_disable_options[0] = MSG[MSG_DISABLED];
     enable_disable_options[1] = MSG[MSG_ENABLED];
+
+    clock_speed_options[0] = MSG[MSG_CLOCK_222];
+    clock_speed_options[1] = MSG[MSG_CLOCK_266];
+    clock_speed_options[2] = MSG[MSG_CLOCK_300];
+    clock_speed_options[3] = MSG[MSG_CLOCK_333];
 
     sound_volume_options[0]  = MSG[MSG_VOL_0];
     sound_volume_options[1]  = MSG[MSG_VOL_10];
@@ -1740,6 +1745,19 @@ static void print_menu_line(const char *str, s16 x, s16 y, u16 fg, s16 bg)
         print_string_gbk(str, x, y, fg, bg);
 }
 
+static void menu_adjust_clock_index(int delta)
+{
+  u32 index = option_clock_index;
+
+  if (delta > 0)
+    index = (index + 1) % CPU_CLOCK_COUNT;
+  else
+    index = (index + CPU_CLOCK_COUNT - 1) % CPU_CLOCK_COUNT;
+
+  option_clock_index = index;
+  option_clock_display_mhz = get_cpu_clock_nominal_mhz(option_clock_index);
+}
+
 static void format_menu_option_line(char *dst, u32 dst_size, const MenuOptionType *opt)
 {
     const char *fmt;
@@ -1756,12 +1774,6 @@ static void format_menu_option_line(char *dst, u32 dst_size, const MenuOptionTyp
 
     if (opt->option_type & NUMBER_SELECTION_OPTION)
     {
-        if (opt->current_option == &option_clock_step)
-        {
-            sprintf(dst, fmt, (int)cpu_clock_mhz_from_step(*(opt->current_option)));
-            return;
-        }
-
         sprintf(dst, fmt, *(opt->current_option));
         return;
     }
@@ -1796,43 +1808,6 @@ static void format_menu_option_line(char *dst, u32 dst_size, const MenuOptionTyp
 
     strncpy(dst, fmt, dst_size - 1);
     dst[dst_size - 1] = '\0';
-}
-
-static void menu_adjust_clock_mhz(int delta)
-{
-  u32 count = get_cpu_clock_step_count();
-  u32 step = option_clock_step;
-
-  if (delta > 0)
-    step = (step + 1) % count;
-  else if (delta < 0)
-  {
-    if (step == 0)
-      step = count - 1;
-    else
-      step--;
-  }
-
-  option_clock_step = step;
-  option_clock_mhz = cpu_clock_mhz_from_step(step);
-}
-
-static u32 config_clock_to_mhz(u32 stored)
-{
-  if (stored <= 3)
-  {
-    static const u32 legacy_mhz[] =
-    {
-      PSP_CLOCK_MHZ_MIN,
-      266,
-      300,
-      PSP_CLOCK_MHZ_DEFAULT
-    };
-
-    return snap_cpu_clock_mhz_to_step(legacy_mhz[stored]);
-  }
-
-  return snap_cpu_clock_mhz_to_step(stored);
 }
 
 static void menu_refresh_language(void)
@@ -2119,7 +2094,7 @@ u32 menu(void)
 	psp_fps_debug = 0;
 	option_frameskip_type = FRAMESKIP_AUTO;
 	option_frameskip_value = 9;
-	option_clock_speed = PSP_CLOCK_333;
+	option_clock_index = PSP_CLOCK_333;
 	option_sound_volume = 10;
 	option_stack_optimize = 1;
 	option_ram_dynarec_policy = RAM_DYNAREC_PARTIAL_WITH_REUSE;
@@ -2164,8 +2139,7 @@ u32 menu(void)
   {
     option_frameskip_type = FRAMESKIP_AUTO;
     option_frameskip_value = 9;
-    option_clock_mhz = PSP_CLOCK_MHZ_DEFAULT;
-    option_clock_sync_step_from_mhz();
+    option_clock_index = 0;
     option_stack_optimize = 1;
     option_ram_dynarec_policy = RAM_DYNAREC_PARTIAL_WITH_REUSE;
     option_hblank_irq_window_start = 1;
@@ -2205,7 +2179,7 @@ u32 menu(void)
   void menu_theme_settings_default(void)
   {
     psp_fps_debug = 0;
-    option_fps_show_mhz = 0;
+    psp_mhz_debug = 0;
     option_screen_capture_format = 0;
     option_sound_volume = 10;
     option_update_backup = 1;
@@ -2595,16 +2569,16 @@ u32 menu(void)
     STRING_SELECTION_OPTION(NULL, MSG[MSG_OPTION_MENU_SWAP_BUTTONS], swap_button_options, &option_swap_confirm_buttons, 2, MSG_OPTION_MENU_HELP_SWAP_BUTTONS, 3, MSG_OPTION_MENU_SWAP_BUTTONS),
     STRING_SELECTION_OPTION(NULL, MSG[MSG_OPTION_MENU_6], sound_volume_options, &option_sound_volume, 11, MSG_OPTION_MENU_HELP_6, 4, MSG_OPTION_MENU_6),
     STRING_SELECTION_OPTION(NULL, MSG[MSG_OPTION_MENU_SHOW_FPS], on_off_options, &psp_fps_debug, 2, MSG_OPTION_MENU_HELP_SHOW_FPS, 5, MSG_OPTION_MENU_SHOW_FPS),
-    STRING_SELECTION_OPTION(NULL, MSG[MSG_OPTION_MENU_SHOW_FPS_MHZ], on_off_options, &option_fps_show_mhz, 2, MSG_OPTION_MENU_HELP_SHOW_FPS_MHZ, 6, MSG_OPTION_MENU_SHOW_FPS_MHZ),
+    STRING_SELECTION_OPTION(NULL, MSG[MSG_OPTION_MENU_SHOW_MHZ], on_off_options, &psp_mhz_debug, 2, MSG_OPTION_MENU_HELP_SHOW_MHZ, 6, MSG_OPTION_MENU_SHOW_MHZ),
     STRING_SELECTION_OPTION(NULL, MSG[MSG_OPTION_MENU_SCREENSHOT], image_format_options, &option_screen_capture_format, 2, MSG_OPTION_MENU_HELP_7, 7, MSG_OPTION_MENU_SCREENSHOT),
     STRING_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_9], update_backup_options, &option_update_backup, 2, MSG_OPTION_MENU_HELP_9, 8, MSG_TOOLTIP_AUTO_BACKUP, MSG_OPTION_MENU_9), 
 
     STRING_SELECTION_ACTION_OPTION(NULL, menu_refresh_language, MSG[MSG_OPTION_MENU_10], language_option, &option_language, 5, MSG_OPTION_MENU_HELP_10, 10, MSG_OPTION_MENU_10), 
 
-    ACTION_OPTION(menu_theme_default, NULL, MSG[MSG_OPTION_MENU_DEFAULT_THEME], MSG_OPTION_MENU_HELP_DEFAULT_THEME, 12, MSG_OPTION_MENU_DEFAULT_THEME),
-    ACTION_OPTION(menu_theme_settings_default, NULL, MSG[MSG_OPTION_MENU_DEFAULT_SETTINGS], MSG_OPTION_MENU_HELP_DEFAULT, 13, MSG_OPTION_MENU_DEFAULT_SETTINGS),
+    ACTION_OPTION(menu_theme_default, NULL, MSG[MSG_OPTION_MENU_DEFAULT_THEME], MSG_OPTION_MENU_HELP_DEFAULT_THEME, 11, MSG_OPTION_MENU_DEFAULT_THEME),
+    ACTION_OPTION(menu_theme_settings_default, NULL, MSG[MSG_OPTION_MENU_DEFAULT_SETTINGS], MSG_OPTION_MENU_HELP_DEFAULT, 12, MSG_OPTION_MENU_DEFAULT_SETTINGS),
 
-    ACTION_SUBMENU_OPTION(NULL, NULL, MSG[MSG_OPTION_MENU_11], MSG_OPTION_MENU_HELP_11, 15, MSG_OPTION_MENU_11)
+    ACTION_SUBMENU_OPTION(NULL, NULL, MSG[MSG_OPTION_MENU_11], MSG_OPTION_MENU_HELP_11, 14, MSG_OPTION_MENU_11)
   };
 
   MAKE_MENU(theme, NULL, NULL);
@@ -2630,7 +2604,7 @@ u32 menu(void)
   {
     STRING_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_3], frameskip_options, &option_frameskip_type, 3, MSG_OPTION_MENU_HELP_3, 0, MSG_TOOLTIP_FRAMESKIP_TYPE, MSG_OPTION_MENU_3),
     NUMERIC_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_4], &option_frameskip_value, 10, MSG_OPTION_MENU_HELP_4, 1, MSG_TOOLTIP_FRAMESKIP_VALUE, MSG_OPTION_MENU_4),
-    NUMERIC_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_5], &option_clock_step, 11, MSG_OPTION_MENU_HELP_5, 2, MSG_TOOLTIP_CPU_CLOCK, MSG_OPTION_MENU_5), 
+    NUMERIC_SELECTION_OPTION(NULL, MSG[MSG_OPTION_MENU_5], &option_clock_display_mhz, CPU_CLOCK_COUNT, MSG_OPTION_MENU_HELP_5, 2, MSG_OPTION_MENU_5),
 
     STRING_SELECTION_OPTION_TT(menu_passive_ram_dynarec_policy, MSG[MSG_OPTION_MENU_BLOCK_CHECKSUM_REUSE], ram_dynarec_options, &option_ram_dynarec_policy, 3, MSG_OPTION_MENU_HELP_BLOCK_CHECKSUM_REUSE, 4, MSG_TOOLTIP_RAM_DYNAREC_MODE, MSG_OPTION_MENU_BLOCK_CHECKSUM_REUSE),
     NUMERIC_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_HBLANK_IRQ_WIN_START], &option_hblank_irq_window_start, 228, MSG_OPTION_MENU_HELP_HBLANK_IRQ_WIN_START, 5, MSG_TOOLTIP_HBLANK_WIN_START, MSG_OPTION_MENU_HBLANK_IRQ_WIN_START),
@@ -2823,8 +2797,10 @@ u32 menu(void)
   //menu_cheat_page = 0;
   reload_cheats_page();
 
+  refresh_cpu_clock_display_from_hardware();
+
   video_resolution_large();
-  apply_cpu_clock_mhz(PSP_CLOCK_MHZ_MIN);
+  set_cpu_clock(PSP_CLOCK_222);
   choose_menu(&main_menu);
 
   while (repeat)
@@ -2966,9 +2942,9 @@ u32 menu(void)
         break;
 
       case CURSOR_RIGHT:
-        if (current_option->current_option == &option_clock_step)
+        if (current_option->current_option == &option_clock_display_mhz)
         {
-          menu_adjust_clock_mhz(1);
+          menu_adjust_clock_index(1);
         }
         else if ((current_option->option_type & (NUMBER_SELECTION_OPTION | STRING_SELECTION_OPTION)) != 0)
         {
@@ -2980,9 +2956,9 @@ u32 menu(void)
         break;
 
       case CURSOR_LEFT:
-        if (current_option->current_option == &option_clock_step)
+        if (current_option->current_option == &option_clock_display_mhz)
         {
-          menu_adjust_clock_mhz(-1);
+          menu_adjust_clock_index(-1);
         }
         else if ((current_option->option_type & (NUMBER_SELECTION_OPTION | STRING_SELECTION_OPTION)) != 0)
         {
@@ -3174,7 +3150,8 @@ u32 menu(void)
   menu_term();
 
   set_sound_volume();
-  set_cpu_clock_mhz(option_clock_mhz);
+  set_cpu_clock_index(option_clock_index);
+  refresh_cpu_clock_display_from_hardware();
 
   sceDisplayWaitVblankStart();
   video_resolution_small();
@@ -3396,7 +3373,7 @@ static s32 save_game_config_file(void)
     file_options[2] = option_screen_filter;
     file_options[3] = option_frameskip_type;
     file_options[4] = option_frameskip_value;
-    file_options[5] = option_clock_mhz;
+    file_options[5] = option_clock_index;
     file_options[6] = option_sound_volume;
 
     for (i = 0; i < 16; i++)
@@ -3438,10 +3415,10 @@ s32 save_config_file(void)
     file_options[0] = option_screen_scale;
     file_options[1] = option_screen_mag;
     file_options[2] = option_screen_filter;
-    file_options[3] = psp_fps_debug;
+    file_options[3] = psp_fps_debug | (psp_mhz_debug << 1);
     file_options[4] = option_frameskip_type;
     file_options[5] = option_frameskip_value;
-    file_options[6] = option_clock_mhz;
+    file_options[6] = option_clock_index;
     file_options[7] = option_sound_volume;
     file_options[8] = option_stack_optimize;
     /* Store mode with +4 marker so old 0/1 boolean configs can be migrated. */
@@ -3459,12 +3436,11 @@ s32 save_config_file(void)
     file_options[20]  = option_psp_vsync % 2;
     file_options[21]  = option_swap_confirm_buttons;
     file_options[22]  = option_theme % 9;
-    file_options[23]  = option_fps_show_mhz % 2;
 
 
     for (i = 0; i < 16; i++)
     {
-      file_options[24 + i] = gamepad_config_map[i];
+      file_options[23 + i] = gamepad_config_map[i];
     }
 
     FILE_WRITE_ARRAY(config_file, file_options);
@@ -3512,7 +3488,7 @@ s32 load_game_config_file(void)
       option_screen_filter    = file_options[2] % 2;
       option_frameskip_type   = file_options[3] % 3;
       option_frameskip_value  = file_options[4];
-      option_clock_mhz        = config_clock_to_mhz(file_options[5]);
+      option_clock_index      = config_value_to_clock_index(file_options[5]);
       option_sound_volume     = file_options[6] % 11;
 
       for (i = 0; i < 16; i++)
@@ -3539,15 +3515,13 @@ s32 load_game_config_file(void)
 
       FILE_CLOSE(game_config_file);
 
-      option_clock_finish_config_load();
       return 0;
     }
   }
 
   option_frameskip_type   = FRAMESKIP_AUTO;
   option_frameskip_value  = 9;
-  option_clock_mhz        = PSP_CLOCK_MHZ_DEFAULT;
-  option_clock_finish_config_load();
+  option_clock_index      = 0;
 
   return -1;
 }
@@ -3590,10 +3564,11 @@ s32 load_config_file(void)
       option_screen_scale     = file_options[0] % 5;
       option_screen_mag       = file_options[1] % 201;
       option_screen_filter    = file_options[2] % 2;
-      psp_fps_debug           = file_options[3] % 2;
+      psp_fps_debug           = file_options[3] & 1;
+      psp_mhz_debug           = (file_options[3] >> 1) & 1;
       option_frameskip_type   = file_options[4] % 3;
       option_frameskip_value  = file_options[5];
-      option_clock_mhz        = config_clock_to_mhz(file_options[6]);
+      option_clock_index      = config_value_to_clock_index(file_options[6]);
       option_sound_volume     = file_options[7] % 11;
       option_stack_optimize   = file_options[8] % 2;
       {
@@ -3626,69 +3601,6 @@ s32 load_config_file(void)
       option_psp_vsync                = file_options[20] % 2;
       option_swap_confirm_buttons     = file_options[21] % 2;
       option_theme                    = file_options[22] % 9;
-      option_fps_show_mhz             = file_options[23] % 2;
-      apply_theme(option_theme);
-
-      for (i = 0; i < 16; i++)
-      {
-        gamepad_config_map[i] = file_options[24 + i] % (BUTTON_ID_NONE + 1);
-
-        if (gamepad_config_map[i] == BUTTON_ID_MENU)
-          menu_button = i;
-      }
-
-      // hardcode triangle to main menu when home button is not enabled
-      if ((enable_home_menu == 0) && (menu_button == -1))
-        gamepad_config_map[0] = BUTTON_ID_MENU;
-
-      FILE_CLOSE(config_file);
-    }
-    else if (file_size == (GPSP_CONFIG_NUM_PRE_FPS_MHZ * 4))
-    {
-      u32 i;
-      u32 file_options[file_size / 4];
-      s32 menu_button = -1;
-
-      FILE_READ_ARRAY(config_file, file_options);
-
-      option_screen_scale     = file_options[0] % 5;
-      option_screen_mag       = file_options[1] % 201;
-      option_screen_filter    = file_options[2] % 2;
-      psp_fps_debug           = file_options[3] % 2;
-      option_frameskip_type   = file_options[4] % 3;
-      option_frameskip_value  = file_options[5];
-      option_clock_mhz        = config_clock_to_mhz(file_options[6]);
-      option_sound_volume     = file_options[7] % 11;
-      option_stack_optimize   = file_options[8] % 2;
-      {
-        u32 stored_ram_dynarec_policy = file_options[9];
-        if (stored_ram_dynarec_policy >= 4 && stored_ram_dynarec_policy <= 6)
-        {
-          option_ram_dynarec_policy = stored_ram_dynarec_policy - 4;
-        }
-        else if (stored_ram_dynarec_policy <= 1)
-        {
-          option_ram_dynarec_policy = stored_ram_dynarec_policy + 1;
-        }
-        else
-        {
-          option_ram_dynarec_policy = RAM_DYNAREC_PARTIAL_WITH_REUSE;
-        }
-      }
-      option_video_renderer           = file_options[10] % 2;
-      option_oam_hijacking_enabled    = file_options[11] % 2;
-      option_boot_mode                = file_options[12] % 2;
-      option_update_backup            = file_options[13] % 2;
-      option_screen_capture_format    = file_options[14] % 2;
-      option_enable_analog            = file_options[15] % 2;
-      option_analog_sensitivity       = file_options[16] % 10;
-      option_language                 = file_options[17] % 5;
-      option_hblank_irq_window_start  = file_options[18] % 228;
-      option_hblank_irq_window_end    = file_options[19] % 228;
-      option_psp_vsync                = file_options[20] % 2;
-      option_swap_confirm_buttons     = file_options[21] % 2;
-      option_theme                    = file_options[22] % 9;
-      option_fps_show_mhz             = 0;
       apply_theme(option_theme);
 
       for (i = 0; i < 16; i++)
@@ -3716,10 +3628,11 @@ s32 load_config_file(void)
       option_screen_scale     = file_options[0] % 5;
       option_screen_mag       = file_options[1] % 201;
       option_screen_filter    = file_options[2] % 2;
-      psp_fps_debug           = file_options[3] % 2;
+      psp_fps_debug           = file_options[3] & 1;
+      psp_mhz_debug           = (file_options[3] >> 1) & 1;
       option_frameskip_type   = file_options[4] % 3;
       option_frameskip_value  = file_options[5];
-      option_clock_mhz        = config_clock_to_mhz(file_options[6]);
+      option_clock_index      = config_value_to_clock_index(file_options[6]);
       option_sound_volume     = file_options[7] % 11;
       option_stack_optimize   = file_options[8] % 2;
       {
@@ -3776,10 +3689,11 @@ s32 load_config_file(void)
       option_screen_scale     = file_options[0] % 5;
       option_screen_mag       = file_options[1] % 201;
       option_screen_filter    = file_options[2] % 2;
-      psp_fps_debug           = file_options[3] % 2;
+      psp_fps_debug           = file_options[3] & 1;
+      psp_mhz_debug           = (file_options[3] >> 1) & 1;
       option_frameskip_type   = file_options[4] % 3;
       option_frameskip_value  = file_options[5];
-      option_clock_mhz        = config_clock_to_mhz(file_options[6]);
+      option_clock_index      = config_value_to_clock_index(file_options[6]);
       option_sound_volume     = file_options[7] % 11;
       option_stack_optimize   = file_options[8] % 2;
       {
@@ -3839,10 +3753,11 @@ s32 load_config_file(void)
       option_screen_scale     = file_options[0] % 5;
       option_screen_mag       = file_options[1] % 201;
       option_screen_filter    = file_options[2] % 2;
-      psp_fps_debug           = file_options[3] % 2;
+      psp_fps_debug           = file_options[3] & 1;
+      psp_mhz_debug           = (file_options[3] >> 1) & 1;
       option_frameskip_type   = file_options[4] % 3;
       option_frameskip_value  = file_options[5];
-      option_clock_mhz        = config_clock_to_mhz(file_options[6]);
+      option_clock_index      = config_value_to_clock_index(file_options[6]);
       option_sound_volume     = file_options[7] % 11;
       option_stack_optimize   = file_options[8] % 2;
       {
@@ -3895,10 +3810,11 @@ s32 load_config_file(void)
       option_screen_scale     = file_options[0] % 5;
       option_screen_mag       = file_options[1] % 201;
       option_screen_filter    = file_options[2] % 2;
-      psp_fps_debug           = file_options[3] % 2;
+      psp_fps_debug           = file_options[3] & 1;
+      psp_mhz_debug           = (file_options[3] >> 1) & 1;
       option_frameskip_type   = file_options[4] % 3;
       option_frameskip_value  = file_options[5];
-      option_clock_mhz        = config_clock_to_mhz(file_options[6]);
+      option_clock_index      = config_value_to_clock_index(file_options[6]);
       option_sound_volume     = file_options[7] % 11;
       option_stack_optimize   = file_options[8] % 2;
       {
@@ -3952,10 +3868,11 @@ s32 load_config_file(void)
       option_screen_scale     = file_options[0] % 5;
       option_screen_mag       = file_options[1] % 201;
       option_screen_filter    = file_options[2] % 2;
-      psp_fps_debug           = file_options[3] % 2;
+      psp_fps_debug           = file_options[3] & 1;
+      psp_mhz_debug           = (file_options[3] >> 1) & 1;
       option_frameskip_type   = file_options[4] % 3;
       option_frameskip_value  = file_options[5];
-      option_clock_mhz        = config_clock_to_mhz(file_options[6]);
+      option_clock_index      = config_value_to_clock_index(file_options[6]);
       option_sound_volume     = file_options[7] % 11;
       option_stack_optimize   = file_options[8] % 2;
       {
@@ -4007,7 +3924,7 @@ s32 load_config_file(void)
       psp_fps_debug                 = file_options[3] % 2;
       option_frameskip_type         = file_options[4] % 3;
       option_frameskip_value        = file_options[5];
-      option_clock_mhz              = config_clock_to_mhz(file_options[6]);
+      option_clock_index            = file_options[6] % 4;
       option_sound_volume           = file_options[7] % 11;
       option_stack_optimize         = file_options[8] % 2;
       option_ram_dynarec_policy     = RAM_DYNAREC_PARTIAL_WITH_REUSE;
@@ -4039,7 +3956,6 @@ s32 load_config_file(void)
     else
       FILE_CLOSE(config_file);
 
-    option_clock_finish_config_load();
     return 0;
   }
 
@@ -4047,7 +3963,7 @@ s32 load_config_file(void)
   option_screen_mag               = 170;
   option_screen_filter            = FILTER_BILINEAR;
   psp_fps_debug                   = 0;
-  option_fps_show_mhz             = 0;
+  psp_mhz_debug                   = 0;
   option_sound_volume             = 10;
   option_stack_optimize           = 1;
   option_ram_dynarec_policy       = RAM_DYNAREC_PARTIAL_WITH_REUSE;
@@ -4077,7 +3993,6 @@ s32 load_config_file(void)
   else
     option_language = 1; // english
 
-  option_clock_finish_config_load();
   return -1;
 }
 

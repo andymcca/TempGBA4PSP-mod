@@ -166,6 +166,7 @@ typedef u32 FIXED08_24;
 
 #include "ku_bridge.h"
 #include "exception.h"
+#include "psp_clock.h"
 
 extern u32 option_swap_confirm_buttons;
 void print_swap_aware(const char *src, u32 x, u32 y, u16 color, u16 bg);

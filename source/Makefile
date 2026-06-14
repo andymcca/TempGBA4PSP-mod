@@ -22,12 +22,12 @@ EXTRA_TARGETS = EBOOT.PBP
 COMMON_FILE = \
  common.h \
  cpu.h memory.h video.h psp_video.h input.h sound.h main.h message.h mh_print.h gui.h zip.h png.h \
- ku_bridge.h exception.h ch_print.h
+ ku_bridge.h exception.h ch_print.h psp_clock.h
 
 MAINOBJS = \
- cpu.o memory.o video_dispatch.o video_cc_wrap.o video_old_wrap.o psp_video.o input.o sound.o main.o psp_clock.o systemctrl_imports.o message.o mh_print.o gui.o zip.o png.o \
+ cpu.o memory.o video_dispatch.o video_cc_wrap.o video_old_wrap.o psp_video.o input.o sound.o main.o message.o mh_print.o gui.o zip.o png.o \
  mips_stub.o video_blend_mips.o \
- ku_bridge.o exception.o cheats.o ch_print.o
+ ku_bridge.o exception.o cheats.o ch_print.o psp_clock.o
 
 OBJZ = adler32.o crc32.o deflate.o infback.o inffast.o inflate.o inftrees.o trees.o zutil.o
 OBJG = compress.o uncompr.o gzclose.o gzlib.o gzread.o gzwrite.o
@@ -48,7 +48,7 @@ CFLAGS = \
 
 CXXFLAGS = ${CFLAGS}
 
-ASFLAGS = ${CFLAGS} -I${PSPSDK}/include
+ASFLAGS = ${CFLAGS}
 
 INCDIR = SDK/include src src/zlib src/libpower
 LIBDIR = SDK/lib
@@ -57,6 +57,11 @@ LIBS = src/libpower/libpsppower.a -lpspgu -lpsprtc -lpspaudio -lpspkubridge
 
 include ${PSPSDK}/lib/build.mak
 
-all: $(EXTRA_TARGETS)
+ku_bridge_prx:
+	@$(MAKE) -C prx/ku_bridge
+
+$(OBJS): ku_bridge_prx
+
+all: ku_bridge_prx $(EXTRA_TARGETS)
 	@$(MAKE) -C prx/exceptionHandler/prx
 	@cp prx/exceptionHandler/prx/exception.prx .

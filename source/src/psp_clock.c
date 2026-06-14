@@ -1,292 +1,121 @@
+/*
+ * PLL overclock support adapted from mcidclan's psp-beyond-444mhz (MIT License).
+ * https://github.com/mcidclan/psp-beyond-444mhz
+ */
+
 #include "common.h"
 
-u32 option_clock_mhz = PSP_CLOCK_MHZ_DEFAULT;
-u32 option_clock_step = 3;
+u32 option_clock_index = 0;
+u32 option_clock_display_mhz = 333;
 
-typedef void (*SctrlHENSetSpeedFunc)(int cpu, int bus);
-typedef u32 (*SctrlHENGetSpeedFunc)(void);
+static int ku_bridge_ready = 0;
 
-static SctrlHENSetSpeedFunc sctrlHENSetSpeed_ptr = NULL;
-static SctrlHENGetSpeedFunc sctrlHENGetSpeed_ptr = NULL;
-static int (*scePowerSetClockFrequency_ptr)(int pllfreq, int cpufreq, int busfreq) = NULL;
-static u32 cpu_clock_max_mhz = PSP_CLOCK_MHZ_DEFAULT;
-
-static const u32 all_clock_steps[] =
+static int ensure_ku_bridge(void)
 {
-  222, 266, 300, 333, 352, 370, 389, 407, 426, 444, 463
-};
+  SceUID mod;
+  char prx_path[MAX_PATH];
+  int devkit_version;
 
-#define STANDARD_CLOCK_STEP_COUNT 4
-#define ALL_CLOCK_STEP_COUNT      (sizeof(all_clock_steps) / sizeof(all_clock_steps[0]))
+  if (ku_bridge_ready)
+    return 0;
 
-extern int sctrlHENGetVersion(void);
-extern void sctrlHENSetSpeed(int cpu, int bus);
-extern u32 sctrlHENGetSpeed(void);
+  sprintf(prx_path, "%sku_bridge.prx", main_path);
+  mod = kuKernelLoadModule(prx_path, 0, NULL);
 
-static u32 active_clock_step_count(void)
-{
-  if (sctrlHENSetSpeed_ptr != NULL)
-    return ALL_CLOCK_STEP_COUNT;
-
-  return STANDARD_CLOCK_STEP_COUNT;
-}
-
-static int bus_clock_for_cpu(int cpu)
-{
-  if (cpu >= 333)
-    return cpu / 2;
-
-  if (cpu >= 300)
-    return 150;
-
-  if (cpu >= 266)
-    return 133;
-
-  if (cpu >= 222)
-    return 111;
-
-  return cpu / 2;
-}
-
-static int set_standard_cpu_clock(int cpu, int bus)
-{
-  if (scePowerSetClockFrequency_ptr == NULL)
+  if (mod < 0)
     return -1;
 
-  return scePowerSetClockFrequency_ptr(cpu, cpu, bus);
-}
+  if (sceKernelStartModule(mod, 0, NULL, NULL, NULL) < 0)
+    return -1;
 
-static u32 snap_standard_cpu_mhz(u32 mhz)
-{
-  if (mhz >= 317)
-    return 333;
+  devkit_version = sceKernelDevkitVersion();
+  init_ku_bridge(devkit_version);
 
-  if (mhz >= 283)
-    return 300;
+  if (kuInitCpuClock() < 0)
+    return -1;
 
-  if (mhz >= 244)
-    return 266;
-
-  return 222;
-}
-
-static u32 nearest_clock_step(const u32 *steps, u32 count, u32 mhz)
-{
-  u32 best = steps[0];
-  u32 best_dist = (mhz > best) ? (mhz - best) : (best - mhz);
-  u32 i;
-
-  for (i = 1; i < count; i++)
-  {
-    u32 dist = (mhz > steps[i]) ? (mhz - steps[i]) : (steps[i] - mhz);
-
-    if (dist < best_dist)
-    {
-      best = steps[i];
-      best_dist = dist;
-    }
-  }
-
-  return best;
-}
-
-static u32 find_clock_step_index(const u32 *steps, u32 count, u32 mhz)
-{
-  u32 i;
-
-  for (i = 0; i < count; i++)
-  {
-    if (steps[i] == mhz)
-      return i;
-  }
-
-  mhz = nearest_clock_step(steps, count, mhz);
-
-  for (i = 0; i < count; i++)
-  {
-    if (steps[i] == mhz)
-      return i;
-  }
-
+  ku_bridge_ready = 1;
   return 0;
 }
 
-static void resolve_cfw_clock_exports(void)
+u32 get_cpu_clock_nominal_mhz(u32 index)
 {
-  if (sctrlHENGetVersion() < 0)
-    return;
+  index = clamp_cpu_clock_index(index);
 
-  sctrlHENSetSpeed_ptr = sctrlHENSetSpeed;
-  sctrlHENGetSpeed_ptr = sctrlHENGetSpeed;
-  cpu_clock_max_mhz = PSP_CLOCK_MHZ_MAX;
+  if (ku_bridge_ready)
+    return kuGetCpuClockNominalMhz(index);
+
+  return 333;
 }
 
-u32 get_cpu_clock_step_count(void)
+u32 clamp_cpu_clock_index(u32 index)
 {
-  return active_clock_step_count();
-}
+  if (index >= CPU_CLOCK_COUNT)
+    return CPU_CLOCK_COUNT - 1;
 
-u32 cpu_clock_mhz_from_step(u32 step)
-{
-  u32 count = active_clock_step_count();
-
-  if (step >= count)
-    step = count - 1;
-
-  return all_clock_steps[step];
-}
-
-u32 cpu_clock_step_from_mhz(u32 mhz)
-{
-  return find_clock_step_index(all_clock_steps, active_clock_step_count(),
-                               snap_cpu_clock_mhz_to_step(mhz));
-}
-
-void option_clock_sync_step_from_mhz(void)
-{
-  option_clock_step = cpu_clock_step_from_mhz(option_clock_mhz);
-}
-
-void option_clock_finish_config_load(void)
-{
-  option_clock_mhz = snap_cpu_clock_mhz_to_step(option_clock_mhz);
-  option_clock_sync_step_from_mhz();
-}
-
-u32 clamp_cpu_clock_mhz(u32 mhz)
-{
-  if (mhz < PSP_CLOCK_MHZ_MIN)
-    return PSP_CLOCK_MHZ_MIN;
-
-  if (mhz > cpu_clock_max_mhz)
-    return cpu_clock_max_mhz;
-
-  return mhz;
-}
-
-u32 get_cpu_clock_max_mhz(void)
-{
-  return cpu_clock_max_mhz;
-}
-
-u32 snap_cpu_clock_mhz_to_step(u32 mhz)
-{
-  mhz = clamp_cpu_clock_mhz(mhz);
-
-  if (sctrlHENSetSpeed_ptr != NULL)
-  {
-    return nearest_clock_step(all_clock_steps, ALL_CLOCK_STEP_COUNT, mhz);
-  }
-
-  return snap_standard_cpu_mhz(mhz);
-}
-
-u32 step_cpu_clock_mhz(u32 mhz, int delta)
-{
-  u32 count = active_clock_step_count();
-  u32 index;
-
-  mhz = snap_cpu_clock_mhz_to_step(mhz);
-  index = find_clock_step_index(all_clock_steps, count, mhz);
-
-  if (delta > 0)
-    index = (index + 1) % count;
-  else if (delta < 0)
-  {
-    if (index == 0)
-      index = count - 1;
-    else
-      index--;
-  }
-
-  return all_clock_steps[index];
+  return index;
 }
 
 u32 get_cpu_clock_mhz(void)
 {
-  if (sctrlHENGetSpeed_ptr != NULL)
-  {
-    u32 speed = sctrlHENGetSpeed_ptr();
+  if (!ku_bridge_ready)
+    return get_cpu_clock_nominal_mhz(option_clock_index);
 
-    if (speed >= PSP_CLOCK_MHZ_MIN && speed <= PSP_CLOCK_MHZ_MAX)
-      return snap_cpu_clock_mhz_to_step(speed);
-  }
-
-  return snap_cpu_clock_mhz_to_step((u32)scePowerGetCpuClockFrequencyInt());
+  return (u32)kuGetCpuClockMhz();
 }
 
-void sync_cpu_clock_option_from_system(void)
+void refresh_cpu_clock_display_from_hardware(void)
 {
-  u32 actual = get_cpu_clock_mhz();
-
-  if (actual > option_clock_mhz)
-  {
-    option_clock_mhz = actual;
-    option_clock_sync_step_from_mhz();
-  }
+  option_clock_display_mhz = get_cpu_clock_mhz();
 }
 
 void init_cpu_clock(void)
 {
-  int devkit_version = sceKernelDevkitVersion();
-
-  if (devkit_version < 0x05000010)
-    scePowerSetClockFrequency_ptr = scePowerSetClockFrequency;
-  else
-    scePowerSetClockFrequency_ptr = scePower_EBD177D6;
-
-  resolve_cfw_clock_exports();
+  option_clock_display_mhz = get_cpu_clock_nominal_mhz(option_clock_index);
+  ensure_ku_bridge();
+  refresh_cpu_clock_display_from_hardware();
 }
 
-int apply_cpu_clock_mhz(u32 mhz)
+int apply_cpu_clock_index(u32 index)
 {
-  int bus;
-  int ret = -1;
-  u32 target = snap_cpu_clock_mhz_to_step(mhz);
+  index = clamp_cpu_clock_index(index);
 
-  bus = bus_clock_for_cpu((int)target);
+  if (ensure_ku_bridge() < 0)
+    return -1;
 
-  if (sctrlHENSetSpeed_ptr != NULL)
+  if (kuSetCpuClockIndex(index) < 0)
+    return -1;
+
+  option_clock_index = index;
+  option_clock_display_mhz = get_cpu_clock_mhz();
+  return 0;
+}
+
+int set_cpu_clock_index(u32 index)
+{
+  return apply_cpu_clock_index(index);
+}
+
+u32 config_value_to_clock_index(u32 stored)
+{
+  u32 i;
+  u32 best = 0;
+  u32 best_diff = 0xffffffff;
+
+  if (stored < CPU_CLOCK_COUNT)
+    return clamp_cpu_clock_index(stored);
+
+  for (i = 0; i < CPU_CLOCK_COUNT; i++)
   {
-    sctrlHENSetSpeed_ptr((int)target, bus);
-    ret = 0;
-  }
-  else
-  {
-    switch (target)
+    u32 nominal = get_cpu_clock_nominal_mhz(i);
+    u32 diff = (stored > nominal) ? (stored - nominal) : (nominal - stored);
+
+    if (diff < best_diff)
     {
-      case 333:
-        ret = set_standard_cpu_clock(333, 166);
-        break;
-
-      case 300:
-        ret = set_standard_cpu_clock(300, 150);
-        break;
-
-      case 266:
-        ret = set_standard_cpu_clock(266, 133);
-        break;
-
-      default:
-      case 222:
-        ret = set_standard_cpu_clock(222, 111);
-        break;
+      best_diff = diff;
+      best = i;
     }
   }
 
-  return ret;
-}
-
-int set_cpu_clock_mhz(u32 mhz)
-{
-  u32 target = snap_cpu_clock_mhz_to_step(mhz);
-  int ret = apply_cpu_clock_mhz(target);
-
-  if (ret == 0)
-  {
-    option_clock_mhz = target;
-    option_clock_sync_step_from_mhz();
-  }
-
-  return ret;
+  return best;
 }

@@ -3524,7 +3524,8 @@ s32 load_gamepak(char *name)
 	print_string_gbk(MSG[MSG_LOADING_ROM], X_POS_CENTER, 100, COLOR15_WHITE, BG_NO_FILL);
 
   scePowerLock(0);
-  apply_cpu_clock_mhz(PSP_CLOCK_MHZ_DEFAULT);
+  set_cpu_clock(PSP_CLOCK_333);
+  apply_cpu_clock_index(0);
 
   if (!strcasecmp(dot_position, ".zip") || !strcasecmp(dot_position, ".gbz"))
   {
@@ -3574,7 +3575,8 @@ s32 load_gamepak(char *name)
     add_cheats(cheats_filename);
   }
 
-  apply_cpu_clock_mhz(PSP_CLOCK_MHZ_MIN);
+  set_cpu_clock(PSP_CLOCK_222);
+  set_cpu_clock_index(option_clock_index);
   scePowerUnlock(0);
 
   return file_size;

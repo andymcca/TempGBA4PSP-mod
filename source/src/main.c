@@ -51,9 +51,12 @@ u32 option_swap_confirm_buttons = 0;
 
 u32 option_frameskip_type = FRAMESKIP_AUTO;
 u32 option_frameskip_value = 9;
+
 u32 option_hblank_irq_window_start = 1;
 u32 option_hblank_irq_window_end = 160;
 u32 option_psp_vsync = 0;
+
+u32 psp_mhz_debug = 0;
 
 char main_path[MAX_PATH];
 
@@ -64,7 +67,6 @@ u32 sleep_flag = 0;
 
 u32 synchronize_flag = 1;
 u32 psp_fps_debug = 0;
-u32 option_fps_show_mhz = 0;
 
 u32 real_frame_count = 0;
 u32 virtual_frame_count = 0;
@@ -143,6 +145,10 @@ static void vblank_interrupt_handler(u32 sub, u32 *parg);
 
 static void synchronize(void);
 static void psp_sleep_loop(void);
+
+#define scePowerSetClockFrequency371  scePower_EBD177D6
+static int (*__scePowerSetClockFrequency)(int pllfreq, int cpufreq, int busfreq);
+
 
 #define SOUND_UPDATE_FREQUENCY_STEP                                           \
   FLOAT_TO_FP08_24((16777216.0 / SOUND_FREQUENCY) / timer_reload)             \
@@ -581,41 +587,37 @@ static void synchronize(void)
     if (get_pad_input(PSP_CTRL_HOLD) != 0)
       print_string(FONT_KEY_ICON, 6, 258, COLOR15_YELLOW, BG_NO_FILL);
 
-    // fps
+    // fps / cpu mhz
     if (psp_fps_debug != 0)
     {
-      char print_buffer[24];
+      char print_buffer[16];
+      sprintf(print_buffer, "%02ld(%02ld)", (long)fps, (long)frames_drawn);
+      print_string(print_buffer, 0, 0, COLOR15_WHITE, COLOR15_BLACK);
+    }
 
-      if (option_fps_show_mhz != 0)
-      {
-        sprintf(print_buffer, "%02ld(%02ld) %lum",
-                (long)fps, (long)frames_drawn,
-                (unsigned long)option_clock_mhz);
-      }
-      else
-      {
-        sprintf(print_buffer, "%02ld(%02ld)", (long)fps, (long)frames_drawn);
-      }
-
-      print_string(print_buffer, 0, 0, COLOR15_WHITE, BG_NO_FILL);
+    if (psp_mhz_debug != 0)
+    {
+      char mhz_buffer[16];
+      sprintf(mhz_buffer, "%lu MHz", (unsigned long)get_cpu_clock_mhz());
+      print_string(mhz_buffer, 0, psp_fps_debug ? 12 : 0, COLOR15_WHITE, COLOR15_BLACK);
     }
   }
 
   if (!synchronize_flag)
   {
-    if (psp_fps_debug != 0)
+    if (psp_fps_debug != 0 || psp_mhz_debug != 0)
 	{
 		if (option_language == 0)
-			print_string(MSG[MSG_TURBO], 0, 12, COLOR15_WHITE, BG_NO_FILL);
+			print_string(MSG[MSG_TURBO], 0, 12, COLOR15_WHITE, COLOR15_BLACK);
 		else
-			print_string_gbk(MSG[MSG_TURBO], 0, 12, COLOR15_WHITE, BG_NO_FILL);
+			print_string_gbk(MSG[MSG_TURBO], 0, 12, COLOR15_WHITE, COLOR15_BLACK);
 	}
 	else
 	{
 		if (option_language == 0)
-		print_string(MSG[MSG_TURBO], 0, 0, COLOR15_WHITE, BG_NO_FILL);
+		print_string(MSG[MSG_TURBO], 0, 0, COLOR15_WHITE, COLOR15_BLACK);
 		else
-		print_string_gbk(MSG[MSG_TURBO], 0, 0, COLOR15_WHITE, BG_NO_FILL);
+		print_string_gbk(MSG[MSG_TURBO], 0, 0, COLOR15_WHITE, COLOR15_BLACK);
 	}
     used_frameskip_type = FRAMESKIP_MANUAL;
     used_frameskip_value = 4;
@@ -784,7 +786,10 @@ static void setup_main(void)
 
   int devkit_version = sceKernelDevkitVersion();
 
-  init_cpu_clock();
+  if (devkit_version < 0x05000010)
+    __scePowerSetClockFrequency = scePowerSetClockFrequency;
+  else
+    __scePowerSetClockFrequency = scePowerSetClockFrequency371;
 
   __draw_volume_status = draw_volume_status_null;
 
@@ -815,8 +820,9 @@ static void setup_main(void)
   sceImposeSetHomePopup(enable_home_menu ^ 1);
 
   load_setting_cfg();
-  option_clock_finish_config_load();
   load_bios_file();
+
+  init_cpu_clock();
 
   init_gamepak_buffer();
 
@@ -864,7 +870,7 @@ int user_main(int argc, char *argv[])
 
   reset_gba();
 
-  set_cpu_clock_mhz(option_clock_mhz);
+  set_cpu_clock_index(option_clock_index);
 
   sceDisplayWaitVblankStart();
   video_resolution_small();
@@ -894,7 +900,7 @@ void quit(void)
   memory_term();
   video_term();
 
-  set_cpu_clock_mhz(PSP_CLOCK_MHZ_MIN);
+  set_cpu_clock(PSP_CLOCK_222);
 
   sceKernelDisableSubIntr(PSP_VBLANK_INT, 0);
   sceKernelReleaseSubIntrHandler(PSP_VBLANK_INT, 0);
@@ -1102,6 +1108,37 @@ u32 yesno_dialog(const char *text)
   }
 
   return (gui_action == CURSOR_SELECT) ? 0 : 1;
+}
+
+
+int set_cpu_clock(u32 psp_clock)
+{
+  int ret = -1;
+
+  if (__scePowerSetClockFrequency != NULL)
+  {
+    switch (psp_clock)
+    {
+      case PSP_CLOCK_333:
+        ret = (*__scePowerSetClockFrequency)(333, 333, 166);
+        break;
+
+      case PSP_CLOCK_300:
+        ret = (*__scePowerSetClockFrequency)(300, 300, 150);
+        break;
+
+      case PSP_CLOCK_266:
+        ret = (*__scePowerSetClockFrequency)(266, 266, 133);
+        break;
+
+      default:
+      case PSP_CLOCK_222:
+        ret = (*__scePowerSetClockFrequency)(222, 222, 111);
+        break;
+    }
+  }
+
+  return ret;
 }
 
 

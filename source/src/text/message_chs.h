@@ -113,6 +113,9 @@
   // MSG_OPTION_MENU_SHOW_FPS
   "显示 FPS           : %s",
 
+  // MSG_OPTION_MENU_SHOW_MHZ
+  "显示 CPU MHz       : %s",
+
   // MSG_OPTION_MENU_3
   "帧跳过类型   : %s",
 
@@ -153,6 +156,9 @@
   FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":更改   " FONT_BTN_CROSS_GBK ":退出",
 
   // MSG_OPTION_MENU_HELP_SHOW_FPS
+  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":更改   " FONT_BTN_CROSS_GBK ":退出",
+
+  // MSG_OPTION_MENU_HELP_SHOW_MHZ
   FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":更改   " FONT_BTN_CROSS_GBK ":退出",
 
   // MSG_OPTION_MENU_HELP_3
@@ -661,9 +667,6 @@
   // MSG_TOOLTIP_FRAMESKIP_VALUE
   "选择要跳过的帧数 (*/10).",
 
-  // MSG_TOOLTIP_CPU_CLOCK
-  "所有机型 222-333 MHz。ARK-5：352、370、389、407、426、444、463 MHz。",
-
   // MSG_TOOLTIP_RAM_DYNAREC_MODE
   "全冲: 每次发生更改时重新编译所有 RAM.虽然安全，但速度较慢.\n部分不可重复使用: 仅重新编译内存中已更改的代码块.平衡.\n部分 + 重用: 如果数据匹配，则保留该 RAM 块.速度快，但安全性较低.",
 
@@ -843,11 +846,5 @@
 
   // MSG_VOL_100
   "100",
-
-  // MSG_OPTION_MENU_SHOW_FPS_MHZ
-  "显示 CPU MHz       : %s",
-
-  // MSG_OPTION_MENU_HELP_SHOW_FPS_MHZ
-  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":更改   " FONT_BTN_CROSS_GBK ":退出",
 
 },

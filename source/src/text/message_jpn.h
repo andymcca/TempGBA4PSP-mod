@@ -113,6 +113,9 @@
   // MSG_OPTION_MENU_SHOW_FPS
   "FPS を表示      : %s",
 
+  // MSG_OPTION_MENU_SHOW_MHZ
+  "CPU MHz を表示  : %s",
+
   // MSG_OPTION_MENU_3
   "フレームスキップ方式   : %s",
 
@@ -153,6 +156,9 @@
   FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":変更   " FONT_BTN_CROSS_GBK ":終了",
 
   // MSG_OPTION_MENU_HELP_SHOW_FPS
+  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":変更   " FONT_BTN_CROSS_GBK ":終了",
+
+  // MSG_OPTION_MENU_HELP_SHOW_MHZ
   FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":変更   " FONT_BTN_CROSS_GBK ":終了",
 
   // MSG_OPTION_MENU_HELP_3
@@ -661,9 +667,6 @@
   // MSG_TOOLTIP_FRAMESKIP_VALUE
   "スキップするフレーム数を選択してください (*/10).",
 
-  // MSG_TOOLTIP_CPU_CLOCK
-  "全機種222-333MHz。ARK-5: 352, 370, 389, 407, 426, 444, 463MHz。",
-
   // MSG_TOOLTIP_RAM_DYNAREC_MODE
   "完全なフラッシュ: 変更があるたびにすべてのRAMを再コンパイルします.安全ですが、処理に時間がかかります.\n一部再利用不可: RAM内の変更されたブロックのみを再コンパイルする.バランスが取れている.\n部分的 + 再利用: データが一致する場合、RAMブロックを保持します.高速ですが、安全性は低くなります.",
 
@@ -843,11 +846,5 @@
 
   // MSG_VOL_100
   "100",
-
-  // MSG_OPTION_MENU_SHOW_FPS_MHZ
-  "CPU MHz を表示  : %s",
-
-  // MSG_OPTION_MENU_HELP_SHOW_FPS_MHZ
-  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":変更   " FONT_BTN_CROSS_GBK ":終了",
 
 },

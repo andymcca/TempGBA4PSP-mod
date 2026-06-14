@@ -22,6 +22,11 @@ int kuCtrlSetSamplingMode(int mode);
 int kuCtrlPeekBufferPositive(SceCtrlData *pad_data, int count);
 int kuCtrlReadBufferPositive(SceCtrlData *pad_data, int count);
 
+int kuInitCpuClock(void);
+int kuSetCpuClockIndex(u32 index);
+int kuGetCpuClockMhz(void);
+u32 kuGetCpuClockNominalMhz(u32 index);
+
 #ifdef __cplusplus
 }
 #endif

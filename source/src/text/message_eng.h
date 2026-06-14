@@ -113,6 +113,9 @@
   // MSG_OPTION_MENU_SHOW_FPS
   "Show FPS           : %s",
 
+  // MSG_OPTION_MENU_SHOW_MHZ
+  "Show CPU MHz       : %s",
+
   // MSG_OPTION_MENU_3
   "Frameskip type   : %s",
 
@@ -153,6 +156,9 @@
   FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Change   " FONT_BTN_CROSS_GBK ":Exit",
 
   // MSG_OPTION_MENU_HELP_SHOW_FPS
+  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Change   " FONT_BTN_CROSS_GBK ":Exit",
+
+  // MSG_OPTION_MENU_HELP_SHOW_MHZ
   FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Change   " FONT_BTN_CROSS_GBK ":Exit",
 
   // MSG_OPTION_MENU_HELP_3
@@ -661,9 +667,6 @@
   // MSG_TOOLTIP_FRAMESKIP_VALUE
   "Select how many frames to skip (*/10).",
 
-  // MSG_TOOLTIP_CPU_CLOCK
-  "222-333 MHz on all PSPs. With ARK-5: 352, 370, 389, 407, 426, 444, 463 MHz.",
-
   // MSG_TOOLTIP_RAM_DYNAREC_MODE
   "Full flush: Recompile all RAM whenever there is a change. Safe, but slow.\nPartial no reuse: Recompile only the changed block in RAM. Balanced.\nPartial + reuse: Keeps the RAM block if the data matches. Fast, but less safe.",
 
@@ -843,11 +846,5 @@
 
   // MSG_VOL_100
   "100",
-
-  // MSG_OPTION_MENU_SHOW_FPS_MHZ
-  "Show CPU MHz       : %s",
-
-  // MSG_OPTION_MENU_HELP_SHOW_FPS_MHZ
-  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Change   " FONT_BTN_CROSS_GBK ":Exit",
 
 },
