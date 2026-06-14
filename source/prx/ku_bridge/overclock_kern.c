@@ -7,20 +7,23 @@
 #include <pspkernel.h>
 #include <psppower.h>
 
-#define CPU_CLOCK_COUNT 11
+#define CPU_CLOCK_COUNT 14
+#define CPU_CLOCK_BASELINE_INDEX 3
 #define PLL_DEFAULT_DEN 0x12
 #define PLL_BASE_FREQ 37.0f
 #define PLL_DEFAULT_RATIO 1.0f
 #define PLL_DEFAULT_FREQUENCY 333
 #define DELAY_AFTER_CLOCK_CHANGE 300000
+#define DELAY_PLL_RAMP_STEP 50000
 
 static const u8 cpu_clock_multipliers[CPU_CLOCK_COUNT] =
 {
-  0xa2, 0xab, 0xb4, 0xbd, 0xc6, 0xcf, 0xd8, 0xe1, 0xea, 0xf3, 0xfc
+  0x6c, 0x81, 0x92, 0xa2,
+  0xab, 0xb4, 0xbd, 0xc6, 0xcf, 0xd8, 0xe1, 0xea, 0xf3, 0xfc
 };
 
 static u32 cpu_clock_nominal_mhz[CPU_CLOCK_COUNT];
-static u32 applied_clock_index = 0;
+static u32 applied_clock_index = CPU_CLOCK_BASELINE_INDEX;
 static int memory_unlocked = 0;
 
 #define hw(addr) (*((volatile unsigned int *)(addr)))
@@ -133,19 +136,42 @@ static void adjust_domain_ratios(void)
   sceKernelResumeDispatchThread(state);
 }
 
-static int apply_clock_index(u32 index)
+static u32 multiplier_to_table_index(u8 mul)
 {
-  const u32 mul = cpu_clock_multipliers[index];
+  u32 i;
+  u32 best = CPU_CLOCK_BASELINE_INDEX;
+  u32 best_diff = 0xff;
+
+  for (i = 0; i < CPU_CLOCK_COUNT; i++)
+  {
+    u32 diff;
+
+    if (mul >= cpu_clock_multipliers[i])
+      diff = mul - cpu_clock_multipliers[i];
+    else
+      diff = cpu_clock_multipliers[i] - mul;
+
+    if (diff < best_diff)
+    {
+      best_diff = diff;
+      best = i;
+    }
+  }
+
+  return best;
+}
+
+static u32 read_current_table_index(void)
+{
+  const u8 current_mul = (u8)((hw(0xbc1000fc) & 0xff00) >> 8);
+
+  sync();
+  return multiplier_to_table_index(current_mul);
+}
+
+static void write_pll_multiplier(u8 mul)
+{
   int intr, state;
-
-  if (!memory_unlocked)
-    unlock_memory();
-
-  scePowerUnlock(0);
-  scePowerSetClockFrequency(PLL_DEFAULT_FREQUENCY, PLL_DEFAULT_FREQUENCY, PLL_DEFAULT_FREQUENCY / 2);
-  sceKernelDelayThread(DELAY_AFTER_CLOCK_CHANGE);
-
-  adjust_domain_ratios();
 
   state = sceKernelSuspendDispatchThread();
   suspendCpuIntr(intr);
@@ -155,12 +181,48 @@ static int apply_clock_index(u32 index)
   pll_ready();
   settle();
 
-  hw(0xbc1000fc) = (hw(0xbc1000fc) & 0xffff0000) | (mul << 8) | PLL_DEFAULT_DEN;
+  hw(0xbc1000fc) = (hw(0xbc1000fc) & 0xffff0000) | ((u32)mul << 8) | PLL_DEFAULT_DEN;
   sync();
   settle();
 
   resumeCpuIntr(intr);
   sceKernelResumeDispatchThread(state);
+}
+
+static int apply_clock_index(u32 index)
+{
+  u32 current_index;
+  s32 step;
+
+  if (!memory_unlocked)
+    unlock_memory();
+
+  if (index == applied_clock_index)
+    return 0;
+
+  scePowerUnlock(0);
+  scePowerSetClockFrequency(PLL_DEFAULT_FREQUENCY, PLL_DEFAULT_FREQUENCY, PLL_DEFAULT_FREQUENCY / 2);
+  sceKernelDelayThread(DELAY_AFTER_CLOCK_CHANGE);
+
+  adjust_domain_ratios();
+
+  current_index = read_current_table_index();
+
+  if (index == current_index)
+  {
+    applied_clock_index = index;
+    scePowerTick(0);
+    return 0;
+  }
+
+  step = (index > current_index) ? 1 : -1;
+
+  while (current_index != index)
+  {
+    current_index += step;
+    write_pll_multiplier(cpu_clock_multipliers[current_index]);
+    sceKernelDelayThread(DELAY_PLL_RAMP_STEP);
+  }
 
   applied_clock_index = index;
   scePowerTick(0);
@@ -203,16 +265,10 @@ int kuSetCpuClockIndex(u32 index)
 
 int kuGetCpuClockMhz(void)
 {
-  int hw_mhz;
-
   if (!memory_unlocked)
     return (int)cpu_clock_nominal_mhz[applied_clock_index];
 
-  hw_mhz = read_pll_mhz();
-  if (hw_mhz < PLL_DEFAULT_FREQUENCY)
-    return PLL_DEFAULT_FREQUENCY;
-
-  return hw_mhz;
+  return read_pll_mhz();
 }
 
 u32 kuGetCpuClockNominalMhz(u32 index)

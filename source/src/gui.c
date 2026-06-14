@@ -2148,7 +2148,7 @@ u32 menu(void)
   {
     option_frameskip_type = FRAMESKIP_AUTO;
     option_frameskip_value = 9;
-    option_clock_index = 0;
+    option_clock_index = CPU_CLOCK_BASELINE_INDEX;
     option_stack_optimize = 1;
     option_ram_dynarec_policy = RAM_DYNAREC_PARTIAL_WITH_REUSE;
     option_hblank_irq_window_start = 1;
@@ -2806,10 +2806,10 @@ u32 menu(void)
   //menu_cheat_page = 0;
   reload_cheats_page();
 
-  refresh_cpu_clock_display_from_hardware();
+  refresh_cpu_clock_display_from_option();
 
   video_resolution_large();
-  set_cpu_clock(PSP_CLOCK_222);
+  apply_cpu_clock_hardware(PSP_CLOCK_222);
   choose_menu(&main_menu);
 
   while (repeat)
@@ -3552,7 +3552,7 @@ s32 load_game_config_file(void)
 
   option_frameskip_type   = FRAMESKIP_AUTO;
   option_frameskip_value  = 9;
-  option_clock_index      = 0;
+  option_clock_index      = CPU_CLOCK_BASELINE_INDEX;
 
   return -1;
 }

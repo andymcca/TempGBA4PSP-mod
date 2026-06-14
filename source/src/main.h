@@ -117,7 +117,6 @@ void change_ext(char *src, char *buffer, const char *extension);
 u64 ticker(void);
 u32 file_length(char *filename);
 
-int set_cpu_clock(u32 psp_clock);
 
 SceUID psp_fopen(const char *filename, const char *mode);
 void psp_fclose(SceUID filename_tag);

@@ -906,7 +906,7 @@ void quit(void)
   memory_term();
   video_term();
 
-  set_cpu_clock(PSP_CLOCK_222);
+  set_cpu_clock_index(PSP_CLOCK_222);
 
   sceKernelDisableSubIntr(PSP_VBLANK_INT, 0);
   sceKernelReleaseSubIntrHandler(PSP_VBLANK_INT, 0);
@@ -1114,37 +1114,6 @@ u32 yesno_dialog(const char *text)
   }
 
   return (gui_action == CURSOR_SELECT) ? 0 : 1;
-}
-
-
-int set_cpu_clock(u32 psp_clock)
-{
-  int ret = -1;
-
-  if (__scePowerSetClockFrequency != NULL)
-  {
-    switch (psp_clock)
-    {
-      case PSP_CLOCK_333:
-        ret = (*__scePowerSetClockFrequency)(333, 333, 166);
-        break;
-
-      case PSP_CLOCK_300:
-        ret = (*__scePowerSetClockFrequency)(300, 300, 150);
-        break;
-
-      case PSP_CLOCK_266:
-        ret = (*__scePowerSetClockFrequency)(266, 266, 133);
-        break;
-
-      default:
-      case PSP_CLOCK_222:
-        ret = (*__scePowerSetClockFrequency)(222, 222, 111);
-        break;
-    }
-  }
-
-  return ret;
 }
 
 

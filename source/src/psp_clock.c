@@ -5,7 +5,7 @@
 
 #include "common.h"
 
-u32 option_clock_index = 0;
+u32 option_clock_index = CPU_CLOCK_BASELINE_INDEX;
 u32 option_clock_display_mhz = 333;
 
 static int ku_bridge_ready = 0;
@@ -69,6 +69,24 @@ void refresh_cpu_clock_display_from_hardware(void)
   option_clock_display_mhz = get_cpu_clock_mhz();
 }
 
+void refresh_cpu_clock_display_from_option(void)
+{
+  option_clock_display_mhz = get_cpu_clock_nominal_mhz(option_clock_index);
+}
+
+int apply_cpu_clock_hardware(u32 index)
+{
+  index = clamp_cpu_clock_index(index);
+
+  if (ensure_ku_bridge() < 0)
+    return -1;
+
+  if (kuSetCpuClockIndex(index) < 0)
+    return -1;
+
+  return 0;
+}
+
 void init_cpu_clock(void)
 {
   option_clock_display_mhz = get_cpu_clock_nominal_mhz(option_clock_index);
@@ -96,11 +114,20 @@ int set_cpu_clock_index(u32 index)
   return apply_cpu_clock_index(index);
 }
 
+int set_cpu_clock(u32 psp_clock)
+{
+  return set_cpu_clock_index(clamp_cpu_clock_index(psp_clock));
+}
+
 u32 config_value_to_clock_index(u32 stored)
 {
   u32 i;
-  u32 best = 0;
+  u32 best = CPU_CLOCK_BASELINE_INDEX;
   u32 best_diff = 0xffffffff;
+
+  /* Legacy overclock-only indices 0-10 stored 333 MHz at index 0. */
+  if (stored < CPU_CLOCK_LEGACY_OC_COUNT)
+    return clamp_cpu_clock_index(stored + CPU_CLOCK_BASELINE_INDEX);
 
   if (stored < CPU_CLOCK_COUNT)
     return clamp_cpu_clock_index(stored);
