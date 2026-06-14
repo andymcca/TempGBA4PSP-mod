@@ -584,6 +584,9 @@
   // MSG_YES_NO
   FONT_BTN_CIRCLE_GBK ":はい   " FONT_BTN_CROSS_GBK ":いいえ",
 
+  // MSG_DELETE_GAME_CONFIG
+  "このゲームの設定を削除しますか?",
+
   // MSG_BLANK
   "",
 

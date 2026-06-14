@@ -584,6 +584,9 @@
   // MSG_YES_NO
   FONT_BTN_CIRCLE_GBK ":Si   " FONT_BTN_CROSS_GBK ":No",
 
+  // MSG_DELETE_GAME_CONFIG
+  "Eliminare la config salvata per questo gioco?",
+
   // MSG_BLANK
   "",
 

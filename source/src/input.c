@@ -237,6 +237,9 @@ GUI_ACTION_TYPE get_gui_input(void)
   if ((new_buttons & PSP_CTRL_SQUARE) != 0)
     new_button = CURSOR_BACK;
 
+  if ((new_buttons & PSP_CTRL_TRIANGLE) != 0)
+    new_button = CURSOR_ASK;
+
   if (new_button != CURSOR_NONE)
   {
     button_repeat_timestamp = ctrl_data.TimeStamp;

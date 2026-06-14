@@ -584,6 +584,9 @@
   // MSG_YES_NO
   FONT_BTN_CIRCLE_GBK ":是   " FONT_BTN_CROSS_GBK ":否",
 
+  // MSG_DELETE_GAME_CONFIG
+  "删除此游戏的保存设置?",
+
   // MSG_BLANK
   "",
 

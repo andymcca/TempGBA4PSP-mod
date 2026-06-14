@@ -1103,6 +1103,7 @@ void _flush_cache(void);
 static int sort_function(const void *dest_str_ptr, const void *src_str_ptr);
 
 static s32 save_game_config_file(void);
+static void delete_game_config_for_rom(const char *rom_filename);
 
 static void get_timestamp_string(char *buffer, u16 msg_id, ScePspDateTime *msg_time, int day_of_week);
 
@@ -1581,6 +1582,14 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name)
           break;
 
         case CURSOR_DEFAULT:
+          break;
+
+        case CURSOR_ASK:
+          if (column == FILE_LIST && num[FILE_LIST] != 0 &&
+              default_dir_name != NULL && strcmp(default_dir_name, dir_roms) == 0)
+          {
+            delete_game_config_for_rom(file_list[selection[FILE_LIST]]);
+          }
           break;
 
         case CURSOR_NONE:
@@ -3131,6 +3140,7 @@ u32 menu(void)
           }
         }
         /* fall through for other menus */
+      case CURSOR_ASK:
       case CURSOR_NONE:
         break;
     }
@@ -3345,6 +3355,27 @@ static void get_timestamp_string(char *buffer, u16 msg_id, ScePspDateTime *msg_t
 /*-----------------------------------------------------------------------------
   Save Config Files
 -----------------------------------------------------------------------------*/
+
+static void delete_game_config_for_rom(const char *rom_filename)
+{
+  SceUID game_config_file;
+  char game_config_path[MAX_PATH];
+  char game_config_filename[MAX_FILE];
+
+  change_ext((char *)rom_filename, game_config_filename, ".cfg");
+  sprintf(game_config_path, "%s%s", dir_cfg, game_config_filename);
+
+  FILE_OPEN(game_config_file, game_config_path, READ);
+  if (!FILE_CHECK_VALID(game_config_file))
+    return;
+
+  FILE_CLOSE(game_config_file);
+
+  if (yesno_dialog(MSG[MSG_DELETE_GAME_CONFIG]) != 0)
+    return;
+
+  sceIoRemove(game_config_path);
+}
 
 static s32 save_game_config_file(void)
 {

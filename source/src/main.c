@@ -588,18 +588,24 @@ static void synchronize(void)
       print_string(FONT_KEY_ICON, 6, 258, COLOR15_YELLOW, BG_NO_FILL);
 
     // fps / cpu mhz
-    if (psp_fps_debug != 0)
+    if (psp_fps_debug != 0 && psp_mhz_debug != 0)
+    {
+      char print_buffer[32];
+      sprintf(print_buffer, "%02ld(%02ld) %lu MHz", (long)fps, (long)frames_drawn,
+              (unsigned long)get_cpu_clock_mhz());
+      print_string(print_buffer, 0, 0, COLOR15_WHITE, COLOR15_BLACK);
+    }
+    else if (psp_fps_debug != 0)
     {
       char print_buffer[16];
       sprintf(print_buffer, "%02ld(%02ld)", (long)fps, (long)frames_drawn);
       print_string(print_buffer, 0, 0, COLOR15_WHITE, COLOR15_BLACK);
     }
-
-    if (psp_mhz_debug != 0)
+    else if (psp_mhz_debug != 0)
     {
       char mhz_buffer[16];
       sprintf(mhz_buffer, "%lu MHz", (unsigned long)get_cpu_clock_mhz());
-      print_string(mhz_buffer, 0, psp_fps_debug ? 12 : 0, COLOR15_WHITE, COLOR15_BLACK);
+      print_string(mhz_buffer, 0, 0, COLOR15_WHITE, COLOR15_BLACK);
     }
   }
 
