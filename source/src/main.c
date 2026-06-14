@@ -590,7 +590,7 @@ static void synchronize(void)
       {
         sprintf(print_buffer, "%02ld(%02ld) %lum",
                 (long)fps, (long)frames_drawn,
-                (unsigned long)get_cpu_clock_mhz());
+                (unsigned long)option_clock_mhz);
       }
       else
       {
@@ -815,7 +815,7 @@ static void setup_main(void)
   sceImposeSetHomePopup(enable_home_menu ^ 1);
 
   load_setting_cfg();
-  sync_cpu_clock_option_from_system();
+  option_clock_finish_config_load();
   load_bios_file();
 
   init_gamepak_buffer();

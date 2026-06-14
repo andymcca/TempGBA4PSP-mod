@@ -1756,6 +1756,12 @@ static void format_menu_option_line(char *dst, u32 dst_size, const MenuOptionTyp
 
     if (opt->option_type & NUMBER_SELECTION_OPTION)
     {
+        if (opt->current_option == &option_clock_step)
+        {
+            sprintf(dst, fmt, (int)cpu_clock_mhz_from_step(*(opt->current_option)));
+            return;
+        }
+
         sprintf(dst, fmt, *(opt->current_option));
         return;
     }
@@ -1794,7 +1800,21 @@ static void format_menu_option_line(char *dst, u32 dst_size, const MenuOptionTyp
 
 static void menu_adjust_clock_mhz(int delta)
 {
-  option_clock_mhz = step_cpu_clock_mhz(option_clock_mhz, delta);
+  u32 count = get_cpu_clock_step_count();
+  u32 step = option_clock_step;
+
+  if (delta > 0)
+    step = (step + 1) % count;
+  else if (delta < 0)
+  {
+    if (step == 0)
+      step = count - 1;
+    else
+      step--;
+  }
+
+  option_clock_step = step;
+  option_clock_mhz = cpu_clock_mhz_from_step(step);
 }
 
 static u32 config_clock_to_mhz(u32 stored)
@@ -2145,6 +2165,7 @@ u32 menu(void)
     option_frameskip_type = FRAMESKIP_AUTO;
     option_frameskip_value = 9;
     option_clock_mhz = PSP_CLOCK_MHZ_DEFAULT;
+    option_clock_sync_step_from_mhz();
     option_stack_optimize = 1;
     option_ram_dynarec_policy = RAM_DYNAREC_PARTIAL_WITH_REUSE;
     option_hblank_irq_window_start = 1;
@@ -2609,7 +2630,7 @@ u32 menu(void)
   {
     STRING_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_3], frameskip_options, &option_frameskip_type, 3, MSG_OPTION_MENU_HELP_3, 0, MSG_TOOLTIP_FRAMESKIP_TYPE, MSG_OPTION_MENU_3),
     NUMERIC_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_4], &option_frameskip_value, 10, MSG_OPTION_MENU_HELP_4, 1, MSG_TOOLTIP_FRAMESKIP_VALUE, MSG_OPTION_MENU_4),
-    NUMERIC_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_5], &option_clock_mhz, 11, MSG_OPTION_MENU_HELP_5, 2, MSG_TOOLTIP_CPU_CLOCK, MSG_OPTION_MENU_5), 
+    NUMERIC_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_5], &option_clock_step, 11, MSG_OPTION_MENU_HELP_5, 2, MSG_TOOLTIP_CPU_CLOCK, MSG_OPTION_MENU_5), 
 
     STRING_SELECTION_OPTION_TT(menu_passive_ram_dynarec_policy, MSG[MSG_OPTION_MENU_BLOCK_CHECKSUM_REUSE], ram_dynarec_options, &option_ram_dynarec_policy, 3, MSG_OPTION_MENU_HELP_BLOCK_CHECKSUM_REUSE, 4, MSG_TOOLTIP_RAM_DYNAREC_MODE, MSG_OPTION_MENU_BLOCK_CHECKSUM_REUSE),
     NUMERIC_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_HBLANK_IRQ_WIN_START], &option_hblank_irq_window_start, 228, MSG_OPTION_MENU_HELP_HBLANK_IRQ_WIN_START, 5, MSG_TOOLTIP_HBLANK_WIN_START, MSG_OPTION_MENU_HBLANK_IRQ_WIN_START),
@@ -2945,7 +2966,7 @@ u32 menu(void)
         break;
 
       case CURSOR_RIGHT:
-        if (current_option->current_option == &option_clock_mhz)
+        if (current_option->current_option == &option_clock_step)
         {
           menu_adjust_clock_mhz(1);
         }
@@ -2959,7 +2980,7 @@ u32 menu(void)
         break;
 
       case CURSOR_LEFT:
-        if (current_option->current_option == &option_clock_mhz)
+        if (current_option->current_option == &option_clock_step)
         {
           menu_adjust_clock_mhz(-1);
         }
@@ -3518,6 +3539,7 @@ s32 load_game_config_file(void)
 
       FILE_CLOSE(game_config_file);
 
+      option_clock_finish_config_load();
       return 0;
     }
   }
@@ -3525,6 +3547,7 @@ s32 load_game_config_file(void)
   option_frameskip_type   = FRAMESKIP_AUTO;
   option_frameskip_value  = 9;
   option_clock_mhz        = PSP_CLOCK_MHZ_DEFAULT;
+  option_clock_finish_config_load();
 
   return -1;
 }
@@ -4016,6 +4039,7 @@ s32 load_config_file(void)
     else
       FILE_CLOSE(config_file);
 
+    option_clock_finish_config_load();
     return 0;
   }
 
@@ -4053,6 +4077,7 @@ s32 load_config_file(void)
   else
     option_language = 1; // english
 
+  option_clock_finish_config_load();
   return -1;
 }
 
