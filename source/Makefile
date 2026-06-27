@@ -15,6 +15,7 @@ PSP_FW_VERSION = 371
 PSP_LARGE_MEMORY = 1
 
 PSP_EBOOT_ICON = res/ICON0.png
+PSP_EBOOT_PIC1 = res/PIC1.png
 PSP_EBOOT_TITLE = TempGBA mod
 
 EXTRA_TARGETS = EBOOT.PBP
@@ -44,7 +45,7 @@ CFLAGS = \
  -fomit-frame-pointer -fstrict-aliasing \
  -falign-functions=32 -falign-loops -falign-labels -falign-jumps \
  -Wall -Wundef -Wpointer-arith -Wbad-function-cast -Wwrite-strings -Wmissing-prototypes -Wsign-compare \
- -DZLIB_CONST
+ -DZLIB_CONST -flto
 
 CXXFLAGS = ${CFLAGS}
 
@@ -56,6 +57,8 @@ LIBDIR = SDK/lib
 LIBS = src/libpower/libpsppower.a -lpspgu -lpsprtc -lpspaudio -lpspkubridge
 
 include ${PSPSDK}/lib/build.mak
+
+LDFLAGS += -flto
 
 ku_bridge_prx:
 	@$(MAKE) -C prx/ku_bridge

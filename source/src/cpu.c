@@ -2163,9 +2163,24 @@ static void arm_flag_status(BlockDataArmType *block_data, u32 opcode)
       thumb_bx();                                                             \
       break;                                                                  \
                                                                               \
-    CASE08(0x48)                                                              \
-      /* LDR rd, [pc + imm] */                                                \
-      thumb_access_memory(load, imm, rd, 0, 0, pc_relative, ((pc & ~2) + (imm << 2) + 4), u32); \
+    case 0x48 ... 0x4F:                                                       \
+      /* LDR r0..7, [pc + imm] */                                             \
+      {                                                                       \
+        thumb_decode_imm();                                                   \
+        u32 aoff = (pc & ~2) + (imm << 2) + 4;                                \
+        /* ROM + same page -> optimize as const load */                       \
+        if (translation_region == TRANSLATION_REGION_READONLY &&              \
+            (((aoff + 4) >> 15) == (pc >> 15)))                               \
+        {                                                                     \
+          u32 value = ADDRESS32(pc_address_block, (aoff & 0x7FFF));           \
+          thumb_load_pc_pool_const(rd, value);                                \
+        }                                                                     \
+        else                                                                  \
+        {                                                                     \
+          thumb_access_memory_generate_address_pc_relative(aoff, 0, 0);       \
+          thumb_access_memory_load(u32, rd);                                  \
+        }                                                                     \
+      }                                                                       \
       break;                                                                  \
                                                                               \
     case 0x50:                                                                \

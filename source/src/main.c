@@ -839,6 +839,17 @@ static void setup_main(void)
   scePowerUnlock(0);
 }
 
+/* True when path exists and is a regular file (not a directory). */
+static int path_is_regular_file(const char *path)
+{
+  SceIoStat stats;
+
+  if (sceIoGetstat(path, &stats) < 0)
+    return 0;
+
+  return FIO_S_ISREG(stats.st_mode) != 0;
+}
+
 int user_main(int argc, char *argv[])
 {
   char load_filename[MAX_FILE];
@@ -859,11 +870,11 @@ int user_main(int argc, char *argv[])
   }
   else
   {
-    if (load_file(file_ext, load_filename, dir_roms) < 0)
-    {
-      menu();
-    }
-    else
+    /* Drop-in compatible with GrabowskiDev single-game installs: when
+     * roms/game.gba exists, load it directly (no ROM browser). */
+    snprintf(load_filename, sizeof(load_filename), "%sgame.gba", dir_roms);
+
+    if (path_is_regular_file(load_filename))
     {
       if (load_gamepak(load_filename) < 0)
       {
@@ -871,6 +882,16 @@ int user_main(int argc, char *argv[])
         error_msg(MSG[MSG_ERR_LOAD_GAMEPACK], CONFIRMATION_CONT);
         menu();
       }
+    }
+    else if (load_file(file_ext, load_filename, dir_roms) < 0)
+    {
+      menu();
+    }
+    else if (load_gamepak(load_filename) < 0)
+    {
+      clear_screen(COLOR32_BLACK);
+      error_msg(MSG[MSG_ERR_LOAD_GAMEPACK], CONFIRMATION_CONT);
+      menu();
     }
   }
 

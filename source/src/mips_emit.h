@@ -1307,50 +1307,6 @@ u32 execute_spsr_restore_body(u32 address)
     mips_emit_sltiu(reg_z_cache, _rd, 1);                                     \
   }                                                                           \
 
-#define generate_op_sub_flags_prologue(_rn, _rm)                              \
-  if (check_generate_c_flag != 0)                                             \
-  {                                                                           \
-    mips_emit_sltu(reg_c_cache, _rn, _rm);                                    \
-    mips_emit_xori(reg_c_cache, reg_c_cache, 1);                              \
-  }                                                                           \
-  if (check_generate_v_flag != 0)                                             \
-  {                                                                           \
-    mips_emit_slt(reg_v_cache, _rn, _rm);                                     \
-  }                                                                           \
-
-#define generate_op_sub_flags_epilogue(_rd)                                   \
-  generate_op_logic_flags(_rd);                                               \
-  if (check_generate_v_flag != 0)                                             \
-  {                                                                           \
-    if (check_generate_n_flag == 0)                                           \
-    {                                                                         \
-      mips_emit_ext(reg_n_cache, _rd, 31, 1);                                 \
-    }                                                                         \
-    mips_emit_xor(reg_v_cache, reg_v_cache, reg_n_cache);                     \
-  }                                                                           \
-
-#define generate_add_flags_prologue(_rn, _rm)                                 \
-  if ((check_generate_c_flag | check_generate_v_flag) != 0)                   \
-  {                                                                           \
-    mips_emit_addu(reg_c_cache, _rn, reg_zero);                               \
-  }                                                                           \
-  if (check_generate_v_flag != 0)                                             \
-  {                                                                           \
-    mips_emit_slt(reg_v_cache, _rm, reg_zero);                                \
-  }                                                                           \
-
-#define generate_add_flags_epilogue(_rd)                                      \
-  if (check_generate_v_flag != 0)                                             \
-  {                                                                           \
-    mips_emit_slt(reg_a0, _rd, reg_c_cache);                                  \
-    mips_emit_xor(reg_v_cache, reg_v_cache, reg_a0);                          \
-  }                                                                           \
-  if ((check_generate_c_flag | check_generate_v_flag) != 0)                   \
-  {                                                                           \
-    mips_emit_sltu(reg_c_cache, _rd, reg_c_cache);                            \
-  }                                                                           \
-  generate_op_logic_flags(_rd);                                               \
-
 #define generate_op_ands_reg(_rd, _rn, _rm)                                   \
   mips_emit_and(_rd, _rn, _rm);                                               \
   generate_op_logic_flags(_rd);                                               \
@@ -1369,41 +1325,118 @@ u32 execute_spsr_restore_body(u32 address)
   generate_op_logic_flags(_rd);                                               \
 
 #define generate_op_subs_reg(_rd, _rn, _rm)                                   \
-  generate_op_sub_flags_prologue(_rn, _rm);                                   \
+  if (check_generate_c_flag != 0)                                             \
+  {                                                                           \
+    mips_emit_sltu(reg_c_cache, _rn, _rm);                                    \
+    mips_emit_xori(reg_c_cache, reg_c_cache, 1);                              \
+  }                                                                           \
+  if (check_generate_v_flag != 0)                                             \
+  {                                                                           \
+    mips_emit_slt(reg_v_cache, _rn, _rm);                                     \
+  }                                                                           \
   mips_emit_subu(_rd, _rn, _rm);                                              \
-  generate_op_sub_flags_epilogue(_rd);                                        \
+  generate_op_logic_flags(_rd);                                               \
+  if (check_generate_v_flag != 0)                                             \
+  {                                                                           \
+    if (check_generate_n_flag == 0)                                           \
+    {                                                                         \
+      mips_emit_ext(reg_n_cache, _rd, 31, 1);                                 \
+    }                                                                         \
+    mips_emit_xor(reg_v_cache, reg_v_cache, reg_n_cache);                     \
+  }                                                                           \
 
 #define generate_op_rsbs_reg(_rd, _rn, _rm)                                   \
-  generate_op_sub_flags_prologue(_rm, _rn);                                   \
-  mips_emit_subu(_rd, _rm, _rn);                                              \
-  generate_op_sub_flags_epilogue(_rd);                                        \
+  generate_op_subs_reg(_rd, _rm, _rn)                                         \
 
 /* SBCS Rd = Rn - <Oprnd> - NOT(Carry) */
 #define generate_op_sbcs_reg(_rd, _rn, _rm)                                   \
   mips_emit_xori(reg_temp, reg_c_cache, 1);                                   \
-  mips_emit_addu(reg_temp, _rm, reg_temp);                                    \
-  generate_op_sub_flags_prologue(_rn, reg_temp);                              \
-  mips_emit_subu(_rd, _rn, reg_temp);                                         \
-  generate_op_sub_flags_epilogue(_rd);                                        \
+  if (check_generate_c_flag != 0)                                            \
+  {                                                                           \
+    mips_emit_sltu(reg_c_cache, _rm, _rn);                                    \
+    mips_emit_sltu(reg_rv, _rn, _rm);                                         \
+    mips_emit_xori(reg_rv, reg_rv, 1);                                        \
+    mips_emit_movz(reg_c_cache, reg_rv, reg_temp);                            \
+  }                                                                           \
+  if (check_generate_v_flag != 0)                                             \
+  {                                                                           \
+    mips_emit_xor(reg_v_cache, _rn, _rm);                                     \
+    mips_emit_nor(reg_rv, _rm, reg_zero);                                     \
+  }                                                                           \
+  mips_emit_subu(_rd, _rn, _rm);                                              \
+  mips_emit_subu(_rd, _rd, reg_temp);                                         \
+  if (check_generate_v_flag != 0)                                             \
+  {                                                                           \
+    mips_emit_xor(reg_rv, reg_rv, _rd);                                       \
+    mips_emit_and(reg_v_cache, reg_v_cache, reg_rv);                          \
+    mips_emit_srl(reg_v_cache, reg_v_cache, 31);                              \
+  }                                                                           \
+  generate_op_logic_flags(_rd);                                               \
 
 /* RSCS Rd = <Oprnd> - Rn - NOT(Carry) */
 #define generate_op_rscs_reg(_rd, _rn, _rm)                                   \
-  mips_emit_xori(reg_temp, reg_c_cache, 1);                                   \
-  mips_emit_addu(reg_temp, _rn, reg_temp);                                    \
-  generate_op_sub_flags_prologue(_rm, reg_temp);                              \
-  mips_emit_subu(_rd, _rm, reg_temp);                                         \
-  generate_op_sub_flags_epilogue(_rd);                                        \
+  generate_op_sbcs_reg(_rd, _rm, _rn)                                         \
 
 #define generate_op_adds_reg(_rd, _rn, _rm)                                   \
-  generate_add_flags_prologue(_rn, _rm);                                      \
+  if ((check_generate_c_flag | check_generate_v_flag) != 0)                   \
+  {                                                                           \
+    mips_emit_addu(reg_c_cache, _rn, reg_zero);                               \
+  }                                                                           \
+  if (check_generate_v_flag != 0)                                             \
+  {                                                                           \
+    mips_emit_slt(reg_v_cache, _rm, reg_zero);                                \
+  }                                                                           \
   mips_emit_addu(_rd, _rn, _rm);                                              \
-  generate_add_flags_epilogue(_rd);                                           \
+  if (check_generate_v_flag != 0)                                             \
+  {                                                                           \
+    mips_emit_slt(reg_a0, _rd, reg_c_cache);                                  \
+    mips_emit_xor(reg_v_cache, reg_v_cache, reg_a0);                          \
+  }                                                                           \
+  if (check_generate_c_flag != 0)                                             \
+  {                                                                           \
+    mips_emit_sltu(reg_c_cache, _rd, reg_c_cache);                            \
+  }                                                                           \
+  generate_op_logic_flags(_rd);                                               \
 
 #define generate_op_adcs_reg(_rd, _rn, _rm)                                   \
-  mips_emit_addu(reg_temp, _rm, reg_c_cache);                                 \
-  generate_add_flags_prologue(_rn, reg_temp);                                 \
-  mips_emit_addu(_rd, _rn, reg_temp);                                         \
-  generate_add_flags_epilogue(_rd);                                           \
+  if (check_generate_v_flag != 0)                                             \
+  {                                                                           \
+    mips_emit_xor(reg_v_cache, _rn, _rm);                                     \
+    mips_emit_nor(reg_v_cache, reg_v_cache, reg_zero);                        \
+    mips_emit_addu(reg_rv, _rn, reg_zero);                                    \
+  }                                                                           \
+  mips_emit_addu(reg_temp, _rn, _rm);                                         \
+  if (check_generate_c_flag != 0)                                             \
+  {                                                                           \
+    if (check_generate_v_flag != 0)                                           \
+    {                                                                         \
+      mips_emit_sltu(reg_a2, reg_temp, _rm);                                  \
+    }                                                                         \
+    else                                                                      \
+    {                                                                         \
+      mips_emit_sltu(reg_rv, reg_temp, _rm);                                  \
+    }                                                                         \
+  }                                                                           \
+  mips_emit_addu(_rd, reg_temp, reg_c_cache);                                 \
+  if (check_generate_v_flag != 0)                                             \
+  {                                                                           \
+    mips_emit_xor(reg_rv, reg_rv, _rd);                                       \
+    mips_emit_and(reg_v_cache, reg_rv, reg_v_cache);                          \
+    mips_emit_srl(reg_v_cache, reg_v_cache, 31);                              \
+  }                                                                           \
+  if (check_generate_c_flag != 0)                                             \
+  {                                                                           \
+    mips_emit_sltu(reg_c_cache, _rd, reg_c_cache);                            \
+    if (check_generate_v_flag != 0)                                           \
+    {                                                                         \
+      mips_emit_or(reg_c_cache, reg_a2, reg_c_cache);                         \
+    }                                                                         \
+    else                                                                      \
+    {                                                                         \
+      mips_emit_or(reg_c_cache, reg_rv, reg_c_cache);                         \
+    }                                                                         \
+  }                                                                           \
+  generate_op_logic_flags(_rd);                                               \
 
 #define generate_op_movs_reg(_rd, _rn, _rm)                                   \
   mips_emit_addu(_rd, _rm, reg_zero);                                         \
@@ -2264,6 +2297,9 @@ void force_user_mode_body(CPU_MODE_TYPE cpu_mode, CPU_MODE_TYPE new_mode)
 }                                                                             \
 
 // Operation types: imm, mem_reg, mem_imm
+
+#define thumb_load_pc_pool_const(rd, value)                                   \
+  generate_load_imm(arm_to_mips_reg[rd], (value));                            \
 
 /* LDR 1S+1N+1I, STR 2N */
 #define thumb_access_memory_load(mem_type, reg_rd)                            \
