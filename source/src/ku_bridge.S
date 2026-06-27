@@ -2,7 +2,7 @@
 
 #include "pspstub.s"
 
-	STUB_START "ku_bridge",0x40090000,0x000B0005
+	STUB_START "ku_bridge",0x40090000,0x000D0005
 	STUB_FUNC  0xBBB01C12,init_ku_bridge
 	STUB_FUNC  0x13475607,kuImposeGetParam
 	STUB_FUNC  0xB9D58B81,kuImposeSetParam
@@ -11,6 +11,8 @@
 	STUB_FUNC  0x983E0EA4,kuCtrlPeekBufferPositive
 	STUB_FUNC  0x20D2A21C,kuCtrlReadBufferPositive
 	STUB_FUNC  0x66DF7AA4,kuInitCpuClock
+	STUB_FUNC  0xFF29D6AD,kuSyncCpuClockFromHardware
+	STUB_FUNC  0x7F7F7A7B,kuGetCpuClockIndex
 	STUB_FUNC  0x5B7ECED1,kuSetCpuClockIndex
 	STUB_FUNC  0xDD047EE0,kuGetCpuClockMhz
 	STUB_FUNC  0xC6438F21,kuGetCpuClockNominalMhz

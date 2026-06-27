@@ -189,46 +189,6 @@ static void write_pll_multiplier(u8 mul)
   sceKernelResumeDispatchThread(state);
 }
 
-static int apply_clock_index(u32 index)
-{
-  u32 current_index;
-  s32 step;
-
-  if (!memory_unlocked)
-    unlock_memory();
-
-  if (index == applied_clock_index)
-    return 0;
-
-  scePowerUnlock(0);
-  scePowerSetClockFrequency(PLL_DEFAULT_FREQUENCY, PLL_DEFAULT_FREQUENCY, PLL_DEFAULT_FREQUENCY / 2);
-  sceKernelDelayThread(DELAY_AFTER_CLOCK_CHANGE);
-
-  adjust_domain_ratios();
-
-  current_index = read_current_table_index();
-
-  if (index == current_index)
-  {
-    applied_clock_index = index;
-    scePowerTick(0);
-    return 0;
-  }
-
-  step = (index > current_index) ? 1 : -1;
-
-  while (current_index != index)
-  {
-    current_index += step;
-    write_pll_multiplier(cpu_clock_multipliers[current_index]);
-    sceKernelDelayThread(DELAY_PLL_RAMP_STEP);
-  }
-
-  applied_clock_index = index;
-  scePowerTick(0);
-  return 0;
-}
-
 static int read_pll_mhz(void)
 {
   const u32 pllMul = hw(0xbc1000fc) & 0xffff;
@@ -245,6 +205,62 @@ static int read_pll_mhz(void)
   return (int)(mhz + 0.5f);
 }
 
+static int apply_clock_index(u32 index)
+{
+  u32 current_index;
+  s32 step;
+
+  if (!memory_unlocked)
+    unlock_memory();
+
+  current_index = read_current_table_index();
+
+  if (index == current_index)
+  {
+    u32 nominal = cpu_clock_nominal_mhz[index];
+    u32 actual = (u32)read_pll_mhz();
+    u32 diff = (actual > nominal) ? (actual - nominal) : (nominal - actual);
+
+    if (diff <= 2)
+    {
+      applied_clock_index = index;
+      scePowerTick(0);
+      return 0;
+    }
+  }
+
+  /* Entering overclock range from 333 MHz or below needs the standard bring-up. */
+  if (index > CPU_CLOCK_BASELINE_INDEX && current_index <= CPU_CLOCK_BASELINE_INDEX)
+  {
+    scePowerUnlock(0);
+    scePowerSetClockFrequency(PLL_DEFAULT_FREQUENCY, PLL_DEFAULT_FREQUENCY, PLL_DEFAULT_FREQUENCY / 2);
+    sceKernelDelayThread(DELAY_AFTER_CLOCK_CHANGE);
+
+    adjust_domain_ratios();
+    current_index = read_current_table_index();
+
+    if (index == current_index)
+    {
+      applied_clock_index = index;
+      scePowerTick(0);
+      return 0;
+    }
+  }
+
+  step = (index > current_index) ? 1 : -1;
+
+  while (current_index != index)
+  {
+    current_index += step;
+    write_pll_multiplier(cpu_clock_multipliers[current_index]);
+    sceKernelDelayThread(DELAY_PLL_RAMP_STEP);
+  }
+
+  applied_clock_index = index;
+  scePowerTick(0);
+  return 0;
+}
+
 int kuInitCpuClock(void)
 {
   build_nominal_table();
@@ -252,7 +268,25 @@ int kuInitCpuClock(void)
   if (!memory_unlocked)
     unlock_memory();
 
+  applied_clock_index = read_current_table_index();
   return 0;
+}
+
+int kuSyncCpuClockFromHardware(void)
+{
+  if (!memory_unlocked)
+    unlock_memory();
+
+  applied_clock_index = read_current_table_index();
+  return (int)applied_clock_index;
+}
+
+u32 kuGetCpuClockIndex(void)
+{
+  if (!memory_unlocked)
+    return applied_clock_index;
+
+  return read_current_table_index();
 }
 
 int kuSetCpuClockIndex(u32 index)
