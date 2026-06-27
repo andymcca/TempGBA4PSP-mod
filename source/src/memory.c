@@ -3524,7 +3524,6 @@ s32 load_gamepak(char *name)
 	print_string_gbk(MSG[MSG_LOADING_ROM], X_POS_CENTER, 100, COLOR15_WHITE, BG_NO_FILL);
 
   scePowerLock(0);
-  set_cpu_clock_index(CPU_CLOCK_BASELINE_INDEX);
 
   if (!strcasecmp(dot_position, ".zip") || !strcasecmp(dot_position, ".gbz"))
   {
@@ -3574,8 +3573,10 @@ s32 load_gamepak(char *name)
     add_cheats(cheats_filename);
   }
 
-  set_cpu_clock_index(option_clock_index);
   scePowerUnlock(0);
+
+  if (file_size > 0)
+    clock_after_game_config_load();
 
   return file_size;
 

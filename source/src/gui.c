@@ -1102,6 +1102,7 @@ void _flush_cache(void);
 
 static int sort_function(const void *dest_str_ptr, const void *src_str_ptr);
 
+static s32 save_game_config_file_for(const char *gamepak_name);
 static s32 save_game_config_file(void);
 static void delete_game_config_for_rom(const char *rom_filename);
 
@@ -1783,7 +1784,10 @@ static void format_menu_option_line(char *dst, u32 dst_size, const MenuOptionTyp
 
     if (opt->option_type & NUMBER_SELECTION_OPTION)
     {
-        sprintf(dst, fmt, *(opt->current_option));
+        if (opt->current_option == &option_clock_index)
+            sprintf(dst, fmt, get_cpu_clock_nominal_mhz(option_clock_index));
+        else
+            sprintf(dst, fmt, *(opt->current_option));
         return;
     }
 
@@ -1846,8 +1850,9 @@ u32 menu(void)
 
   u32 repeat = 1;
   u32 return_value = 0;
-
   u32 first_load = 0;
+
+  char current_game_for_config[MAX_FILE];
 
   GUI_ACTION_TYPE gui_action;
   SceCtrlData ctrl_data;
@@ -1958,9 +1963,25 @@ u32 menu(void)
     quit();
   } */
 
+  void menu_save_game_config_for(const char *gamepak_name)
+  {
+    if (!first_load && gamepak_name != NULL && gamepak_name[0] != 0)
+      save_game_config_file_for(gamepak_name);
+  }
+
+  void menu_save_game_config(void)
+  {
+    menu_save_game_config_for(gamepak_filename);
+  }
+
+  void menu_save_current_game_config(void)
+  {
+    menu_save_game_config_for(current_game_for_config);
+  }
+
   void menu_suspend(void)
   {
-    save_game_config_file();
+    menu_save_game_config();
 
     if (!first_load)
       update_backup_immediately();
@@ -1973,7 +1994,11 @@ u32 menu(void)
   {
     const char *file_ext[] = { ".zip", ".gba", ".bin", ".agb", ".gbz", NULL };
 
-    save_game_config_file();
+    current_game_for_config[0] = 0;
+    if (!first_load && gamepak_filename[0] != 0)
+      strcpy(current_game_for_config, gamepak_filename);
+
+    menu_save_current_game_config();
 
     if (!first_load)
       update_backup_immediately();
@@ -1996,6 +2021,9 @@ u32 menu(void)
 
       reset_gba();
       reg[CHANGED_PC_STATUS] = 1;
+
+      first_load = 0;
+      strcpy(current_game_for_config, gamepak_filename);
 
       return_value = 1;
       repeat = 0;
@@ -2149,6 +2177,7 @@ u32 menu(void)
     option_frameskip_type = FRAMESKIP_AUTO;
     option_frameskip_value = 9;
     option_clock_index = CPU_CLOCK_BASELINE_INDEX;
+    refresh_cpu_clock_display_from_option();
     option_stack_optimize = 1;
     option_ram_dynarec_policy = RAM_DYNAREC_PARTIAL_WITH_REUSE;
     option_hblank_irq_window_start = 1;
@@ -2613,7 +2642,7 @@ u32 menu(void)
   {
     STRING_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_3], frameskip_options, &option_frameskip_type, 3, MSG_OPTION_MENU_HELP_3, 0, MSG_TOOLTIP_FRAMESKIP_TYPE, MSG_OPTION_MENU_3),
     NUMERIC_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_4], &option_frameskip_value, 10, MSG_OPTION_MENU_HELP_4, 1, MSG_TOOLTIP_FRAMESKIP_VALUE, MSG_OPTION_MENU_4),
-    NUMERIC_SELECTION_OPTION(NULL, MSG[MSG_OPTION_MENU_5], &option_clock_display_mhz, CPU_CLOCK_COUNT, MSG_OPTION_MENU_HELP_5, 2, MSG_OPTION_MENU_5),
+    NUMERIC_SELECTION_OPTION(NULL, MSG[MSG_OPTION_MENU_5], &option_clock_index, CPU_CLOCK_COUNT, MSG_OPTION_MENU_HELP_5, 2, MSG_OPTION_MENU_5),
 
     STRING_SELECTION_OPTION_TT(menu_passive_ram_dynarec_policy, MSG[MSG_OPTION_MENU_BLOCK_CHECKSUM_REUSE], ram_dynarec_options, &option_ram_dynarec_policy, 3, MSG_OPTION_MENU_HELP_BLOCK_CHECKSUM_REUSE, 4, MSG_TOOLTIP_RAM_DYNAREC_MODE, MSG_OPTION_MENU_BLOCK_CHECKSUM_REUSE),
     NUMERIC_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_HBLANK_IRQ_WIN_START], &option_hblank_irq_window_start, 228, MSG_OPTION_MENU_HELP_HBLANK_IRQ_WIN_START, 5, MSG_TOOLTIP_HBLANK_WIN_START, MSG_OPTION_MENU_HBLANK_IRQ_WIN_START),
@@ -2779,7 +2808,11 @@ u32 menu(void)
   if (gamepak_filename[0] == 0)
     gamepak_file_none();
   else
+  {
+    first_load = 0;
+    strcpy(current_game_for_config, gamepak_filename);
     change_ext(gamepak_filename, game_title, "");
+  }
 
   screen_image_ptr = current_screen;
 
@@ -2806,10 +2839,9 @@ u32 menu(void)
   //menu_cheat_page = 0;
   reload_cheats_page();
 
-  refresh_cpu_clock_display_from_option();
+  clock_prepare_menu_entry(gamepak_filename[0] != 0);
 
   video_resolution_large();
-  apply_cpu_clock_hardware(PSP_CLOCK_222);
   choose_menu(&main_menu);
 
   while (repeat)
@@ -2951,7 +2983,7 @@ u32 menu(void)
         break;
 
       case CURSOR_RIGHT:
-        if (current_option->current_option == &option_clock_display_mhz)
+        if (current_option->current_option == &option_clock_index)
         {
           menu_adjust_clock_index(1);
         }
@@ -2965,7 +2997,7 @@ u32 menu(void)
         break;
 
       case CURSOR_LEFT:
-        if (current_option->current_option == &option_clock_display_mhz)
+        if (current_option->current_option == &option_clock_index)
         {
           menu_adjust_clock_index(-1);
         }
@@ -3150,24 +3182,27 @@ u32 menu(void)
   /* Restore HOME to emulator menu mode (disable OS popup) */
   sceImposeSetHomePopup(0);
 
-  scePowerLock(0);
-
-  if (gamepak_file_large == -2)
-    gamepak_file_reopen();
-
   while (get_pad_input(0x0001FFFF) != 0);
 
   menu_term();
 
   set_sound_volume();
-  set_cpu_clock_index(option_clock_index);
-  refresh_cpu_clock_display_from_hardware();
+
+  if (!first_load)
+    save_game_config_file();
+
+  /* Clock ramp must run with power unlocked (plan: read HW, ramp to option). */
+  clock_menu_resume();
+
+  scePowerLock(0);
+
+  if (gamepak_file_large == -2)
+    gamepak_file_reopen();
 
   sceDisplayWaitVblankStart();
   video_resolution_small();
 
   sound_pause = 0;
-  //menu_cheat_page = 0;//
 
   scePowerUnlock(0);
 
@@ -3377,17 +3412,17 @@ static void delete_game_config_for_rom(const char *rom_filename)
   sceIoRemove(game_config_path);
 }
 
-static s32 save_game_config_file(void)
+static s32 save_game_config_file_for(const char *gamepak_name)
 {
   SceUID game_config_file;
   char game_config_path[MAX_PATH];
   char game_config_filename[MAX_FILE];
   s32 return_value = -1;
 
-  if (gamepak_filename[0] == 0)
+  if (gamepak_name == NULL || gamepak_name[0] == 0)
     return return_value;
 
-  change_ext(gamepak_filename, game_config_filename, ".cfg");
+  change_ext((char *)gamepak_name, game_config_filename, ".cfg");
   sprintf(game_config_path, "%s%s", dir_cfg, game_config_filename);
 
   scePowerLock(0);
@@ -3404,7 +3439,7 @@ static s32 save_game_config_file(void)
     file_options[2] = option_screen_filter;
     file_options[3] = option_frameskip_type;
     file_options[4] = option_frameskip_value;
-    file_options[5] = option_clock_index;
+    file_options[5] = clock_mhz_for_game_config(option_clock_index);
     file_options[6] = option_sound_volume;
 
     for (i = 0; i < 16; i++)
@@ -3421,6 +3456,11 @@ static s32 save_game_config_file(void)
   scePowerUnlock(0);
 
   return return_value;
+}
+
+static s32 save_game_config_file(void)
+{
+  return save_game_config_file_for(gamepak_filename);
 }
 
 s32 save_config_file(void)
@@ -3449,7 +3489,7 @@ s32 save_config_file(void)
     file_options[3] = psp_fps_debug | (psp_mhz_debug << 1);
     file_options[4] = option_frameskip_type;
     file_options[5] = option_frameskip_value;
-    file_options[6] = option_clock_index;
+    file_options[6] = 0; /* reserved: clock speed is per-game only */
     file_options[7] = option_sound_volume;
     file_options[8] = option_stack_optimize;
     /* Store mode with +4 marker so old 0/1 boolean configs can be migrated. */
@@ -3519,7 +3559,8 @@ s32 load_game_config_file(void)
       option_screen_filter    = file_options[2] % 2;
       option_frameskip_type   = file_options[3] % 3;
       option_frameskip_value  = file_options[4];
-      option_clock_index      = config_value_to_clock_index(file_options[5]);
+      option_clock_index      = clock_index_from_game_config(file_options[5]);
+      refresh_cpu_clock_display_from_option();
       option_sound_volume     = file_options[6] % 11;
 
       for (i = 0; i < 16; i++)
@@ -3552,7 +3593,6 @@ s32 load_game_config_file(void)
 
   option_frameskip_type   = FRAMESKIP_AUTO;
   option_frameskip_value  = 9;
-  option_clock_index      = CPU_CLOCK_BASELINE_INDEX;
 
   return -1;
 }
@@ -3599,7 +3639,6 @@ s32 load_config_file(void)
       psp_mhz_debug           = (file_options[3] >> 1) & 1;
       option_frameskip_type   = file_options[4] % 3;
       option_frameskip_value  = file_options[5];
-      option_clock_index      = config_value_to_clock_index(file_options[6]);
       option_sound_volume     = file_options[7] % 11;
       option_stack_optimize   = file_options[8] % 2;
       {
@@ -3663,7 +3702,6 @@ s32 load_config_file(void)
       psp_mhz_debug           = (file_options[3] >> 1) & 1;
       option_frameskip_type   = file_options[4] % 3;
       option_frameskip_value  = file_options[5];
-      option_clock_index      = config_value_to_clock_index(file_options[6]);
       option_sound_volume     = file_options[7] % 11;
       option_stack_optimize   = file_options[8] % 2;
       {
@@ -3724,7 +3762,6 @@ s32 load_config_file(void)
       psp_mhz_debug           = (file_options[3] >> 1) & 1;
       option_frameskip_type   = file_options[4] % 3;
       option_frameskip_value  = file_options[5];
-      option_clock_index      = config_value_to_clock_index(file_options[6]);
       option_sound_volume     = file_options[7] % 11;
       option_stack_optimize   = file_options[8] % 2;
       {
@@ -3788,7 +3825,6 @@ s32 load_config_file(void)
       psp_mhz_debug           = (file_options[3] >> 1) & 1;
       option_frameskip_type   = file_options[4] % 3;
       option_frameskip_value  = file_options[5];
-      option_clock_index      = config_value_to_clock_index(file_options[6]);
       option_sound_volume     = file_options[7] % 11;
       option_stack_optimize   = file_options[8] % 2;
       {
@@ -3845,7 +3881,6 @@ s32 load_config_file(void)
       psp_mhz_debug           = (file_options[3] >> 1) & 1;
       option_frameskip_type   = file_options[4] % 3;
       option_frameskip_value  = file_options[5];
-      option_clock_index      = config_value_to_clock_index(file_options[6]);
       option_sound_volume     = file_options[7] % 11;
       option_stack_optimize   = file_options[8] % 2;
       {
@@ -3903,7 +3938,6 @@ s32 load_config_file(void)
       psp_mhz_debug           = (file_options[3] >> 1) & 1;
       option_frameskip_type   = file_options[4] % 3;
       option_frameskip_value  = file_options[5];
-      option_clock_index      = config_value_to_clock_index(file_options[6]);
       option_sound_volume     = file_options[7] % 11;
       option_stack_optimize   = file_options[8] % 2;
       {
@@ -3955,7 +3989,6 @@ s32 load_config_file(void)
       psp_fps_debug                 = file_options[3] % 2;
       option_frameskip_type         = file_options[4] % 3;
       option_frameskip_value        = file_options[5];
-      option_clock_index            = file_options[6] % 4;
       option_sound_volume           = file_options[7] % 11;
       option_stack_optimize         = file_options[8] % 2;
       option_ram_dynarec_policy     = RAM_DYNAREC_PARTIAL_WITH_REUSE;
