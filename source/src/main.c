@@ -876,8 +876,6 @@ int user_main(int argc, char *argv[])
 
   reset_gba();
 
-  set_cpu_clock_index(option_clock_index);
-
   sceDisplayWaitVblankStart();
   video_resolution_small();
 
@@ -906,7 +904,7 @@ void quit(void)
   memory_term();
   video_term();
 
-  set_cpu_clock_index(PSP_CLOCK_222);
+  quit_cpu_clock_cleanup();
 
   sceKernelDisableSubIntr(PSP_VBLANK_INT, 0);
   sceKernelReleaseSubIntrHandler(PSP_VBLANK_INT, 0);
