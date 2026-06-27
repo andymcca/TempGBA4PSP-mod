@@ -230,8 +230,11 @@
   // MSG_STATE_MENU_2
   "Back",
 
+  // MSG_STATE_MENU_DELETE
+  "Delete",
+
   // MSG_STATE_MENU_HELP_0
-  FONT_BTN_CIRCLE_GBK ":Execute   " FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Load/Save   " FONT_BTN_CROSS_GBK ":Exit",
+  FONT_BTN_CIRCLE_GBK ":Execute   " FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Load/Save   " FONT_BTN_TRIANGLE_GBK ":Delete   " FONT_BTN_CROSS_GBK ":Exit",
 
   // MSG_STATE_MENU_HELP_1
   FONT_BTN_CIRCLE_GBK ":File browser   " FONT_L_TRIGGER_GBK ":Shortcut key   "FONT_BTN_CROSS_GBK ":Exit",
@@ -840,5 +843,8 @@
 
   // MSG_VOL_100
   "100",
+
+  // MSG_AUTO_SAVESTATE_LOAD_PROMPT
+  "Load auto-savestate?",
 
 },

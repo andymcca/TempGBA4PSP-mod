@@ -230,8 +230,11 @@
   // MSG_STATE_MENU_2
   "Indietro",
 
+  // MSG_STATE_MENU_DELETE
+  "Cancella",
+
   // MSG_STATE_MENU_HELP_0
-  FONT_BTN_CIRCLE_GBK ":Esegui   " FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Carica/Salva   " FONT_BTN_CROSS_GBK ":Esci",
+  FONT_BTN_CIRCLE_GBK ":Esegui   " FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Carica/Salva   " FONT_BTN_TRIANGLE_GBK ":Cancella   " FONT_BTN_CROSS_GBK ":Esci",
 
   // MSG_STATE_MENU_HELP_1
   FONT_BTN_CIRCLE_GBK ":Esplora file   " FONT_L_TRIGGER_GBK ":Tasto scorciatoia   "FONT_BTN_CROSS_GBK ":Esci",
@@ -840,5 +843,8 @@
 
   // MSG_VOL_100
   "100",
+
+  // MSG_AUTO_SAVESTATE_LOAD_PROMPT
+  "Caricare stato di salvataggio automatico?",
 
 },

@@ -47,5 +47,17 @@ extern u32 savestate_slot;
 u32 action_loadstate(void);
 u32 action_savestate(void);
 
+/* Theme colors — defined in gui.c, accessible everywhere via common.h */
+extern u16 color_bg;
+extern u16 color_rom_info;
+extern u16 color_active_item;
+extern u16 color_inactive_item;
+extern u16 color_tooltip_text;
+extern u16 color_help_text;
+extern u16 color_inactive_dir;
+extern u16 color_scroll_bar;
+extern u16 color_batt_normal;
+extern u16 color_batt_low;
+extern u16 color_batt_charg;
 
 #endif /* GUI_H */

@@ -1373,9 +1373,9 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name)
       if (get_pad_input(PSP_CTRL_HOLD) != 0)
 		{
 		if (option_language == 0)
-			print_string(FONT_KEY_ICON_GBK, 6, 258, COLOR15_YELLOW, BG_NO_FILL);
+			print_string(FONT_KEY_ICON_GBK, 6, 258, color_batt_low, BG_NO_FILL);
 		else
-			print_string_gbk(FONT_KEY_ICON, 6, 258, COLOR15_YELLOW, BG_NO_FILL);
+			print_string_gbk(FONT_KEY_ICON, 6, 258, color_batt_low, BG_NO_FILL);
 		}
       // draw scroll bar
       if (num[FILE_LIST] > FILE_LIST_ROWS)
@@ -1649,10 +1649,14 @@ static void get_savestate_info(char *filename, u16 *snapshot, char *timestamp)
 
 static void get_savestate_filename(u32 slot, char *name_buffer)
 {
-  char savestate_ext[16];
-
-  sprintf(savestate_ext, "_%d.svs", (int)slot);
-  change_ext(gamepak_filename, name_buffer, savestate_ext);
+  if (slot == 10)
+    change_ext(gamepak_filename, name_buffer, "_auto.svs");
+  else
+  {
+    char savestate_ext[16];
+    sprintf(savestate_ext, "_%d.svs", (int)slot);
+    change_ext(gamepak_filename, name_buffer, savestate_ext);
+  }
 }
 
 
@@ -1677,6 +1681,57 @@ u32 action_savestate(void)
 
   free(current_screen);
   return result;
+}
+
+/* Save/load to a specific slot without disturbing the global savestate_slot */
+static u32 action_savestate_slot(u32 slot)
+{
+  char savestate_filename[MAX_FILE];
+  u16 *current_screen;
+  u32 result;
+  u32 old_slot = savestate_slot;
+
+  savestate_slot = slot;
+  current_screen = copy_screen();
+  get_savestate_filename(savestate_slot, savestate_filename);
+  result = save_state_silent(savestate_filename, current_screen);
+  free(current_screen);
+  savestate_slot = old_slot;
+  return result;
+}
+
+static u32 action_loadstate_slot(u32 slot)
+{
+  char savestate_filename[MAX_FILE];
+  u32 result;
+  u32 old_slot = savestate_slot;
+
+  savestate_slot = slot;
+  get_savestate_filename(savestate_slot, savestate_filename);
+  result = load_state_silent(savestate_filename);
+  savestate_slot = old_slot;
+  return result;
+}
+
+static u32 auto_savestate_exists(void)
+{
+  char savestate_filename[MAX_FILE];
+  char savestate_path[MAX_PATH];
+  SceUID fd;
+  u32 old_slot = savestate_slot;
+
+  savestate_slot = 10;
+  get_savestate_filename(10, savestate_filename);
+  snprintf(savestate_path, sizeof(savestate_path), "%s%s", dir_state, savestate_filename);
+  FILE_OPEN(fd, savestate_path, READ);
+  savestate_slot = old_slot;
+
+  if (FILE_CHECK_VALID(fd))
+  {
+    FILE_CLOSE(fd);
+    return 1;
+  }
+  return 0;
 }
 
 static u32 ram_dynarec_policy_menu_prev = ~(u32)0;
@@ -1837,7 +1892,7 @@ u32 menu(void)
   u16 *savestate_screen = NULL;
 
   u32 savestate_action = 0;
-  static char savestate_timestamps[10][40];
+  static char savestate_timestamps[11][40];
 
   char time_str[40];
   char batt_str[40];
@@ -1877,6 +1932,7 @@ u32 menu(void)
   auto u32 menu_save_state(void);
   auto u32 menu_load_state(void);
   auto void menu_load_state_file(void);
+  auto void menu_delete_state(void);
 
 //  auto void menu_default(void);
   auto void menu_load_cheat_file(void);
@@ -1954,7 +2010,11 @@ u32 menu(void)
     save_game_config_file();
 
     if (!first_load)
+    {
       update_backup_immediately();
+      /* Auto-save current game to slot 10 before loading new ROM */
+      action_savestate_slot(10);
+    }
 
     if (load_file(file_ext, filename_buffer, dir_roms) == 0)
     {
@@ -1974,6 +2034,15 @@ u32 menu(void)
 
       reset_gba();
       reg[CHANGED_PC_STATUS] = 1;
+
+      /* Prompt to load auto-savestate for the newly loaded game */
+      if (auto_savestate_exists())
+      {
+        if (yesno_dialog(MSG[MSG_AUTO_SAVESTATE_LOAD_PROMPT]) == 0)
+        {
+          action_loadstate_slot(10);
+        }
+      }
 
       return_value = 1;
       repeat = 0;
@@ -2025,7 +2094,10 @@ u32 menu(void)
   {
     get_savestate_filename(savestate_slot, filename_buffer);
     get_savestate_info(filename_buffer, savestate_screen, line_buffer);
-    sprintf(savestate_timestamps[savestate_slot], "%d: %s", (int)savestate_slot, line_buffer);
+    if (savestate_slot == 10)
+      sprintf(savestate_timestamps[savestate_slot], "AUTO: %s", line_buffer);
+    else
+      sprintf(savestate_timestamps[savestate_slot], "%d: %s", (int)savestate_slot, line_buffer);
 
     screen_image_ptr = savestate_screen;
   }
@@ -2070,6 +2142,43 @@ u32 menu(void)
       menu_init();
       choose_menu(current_menu);
       counter = 0;
+    }
+  }
+
+  void menu_delete_state(void)
+  {
+    char savestate_filename[MAX_FILE];
+    char savestate_path[MAX_PATH];
+    char confirm_msg[80];
+
+    if (first_load || current_option_num >= 10)
+      return;
+
+    get_savestate_filename(savestate_slot, savestate_filename);
+    snprintf(confirm_msg, sizeof(confirm_msg), "%s %s?",
+             MSG[MSG_STATE_MENU_DELETE], savestate_timestamps[savestate_slot]);
+
+    /* yesno_dialog: returns 0 = confirmed (O), 1 = cancel (X) */
+    if (yesno_dialog(confirm_msg) == 0)
+    {
+      snprintf(savestate_path, sizeof(savestate_path), "%s%s", dir_state, savestate_filename);
+      sceIoRemove(savestate_path);
+
+      /* Refresh timestamp to empty */
+      snprintf(savestate_timestamps[savestate_slot], 40, "%d: %s",
+               (int)savestate_slot,
+               MSG[(date_format == 0) ? MSG_STATE_MENU_DATE_NONE_0 : MSG_STATE_MENU_DATE_NONE_1]);
+
+      /* Refresh screenshot to blank */
+      memset(savestate_screen, 0, GBA_SCREEN_SIZE);
+      if (option_language == 0)
+        print_string_ext(MSG[MSG_STATE_MENU_STATE_NONE], X_POS_CENTER, 74,
+                         COLOR15_WHITE, BG_NO_FILL, savestate_screen, GBA_SCREEN_WIDTH);
+      else
+        print_string_ext_gbk(MSG[MSG_STATE_MENU_STATE_NONE], X_POS_CENTER, 74,
+                             COLOR15_WHITE, BG_NO_FILL, savestate_screen, GBA_SCREEN_WIDTH);
+
+      screen_image_ptr = savestate_screen;
     }
   }
 
@@ -2284,17 +2393,17 @@ u32 menu(void)
       menu_init_flag = 0;
     }
 
-    if (current_option_num < 10)
+    if (current_option_num < 11)
     {
       if (savestate_slot != current_option_num)
       {
         savestate_slot = current_option_num;
         menu_change_state();
       }
-	if (option_language == 0)
-      print_string(MSG[savestate_action ? MSG_SAVE : MSG_LOAD], MENU_LIST_POS_X + ((strlen(savestate_timestamps[0]) + 1) * FONTWIDTH), (current_option_num * FONTHEIGHT) + 28, color_active_item, BG_NO_FILL);
+      if (option_language == 0)
+      print_string(MSG[savestate_action ? MSG_SAVE : MSG_LOAD], MENU_LIST_POS_X + ((strlen(savestate_timestamps[current_option_num]) + 1) * FONTWIDTH), (current_option_num * FONTHEIGHT) + 28, color_active_item, BG_NO_FILL);
 	else
-      print_string_gbk(MSG[savestate_action ? MSG_SAVE : MSG_LOAD], MENU_LIST_POS_X + ((strlen(savestate_timestamps[0]) + 1) * FONTWIDTH), (current_option_num * FONTHEIGHT) + 28, color_active_item, BG_NO_FILL);
+      print_string_gbk(MSG[savestate_action ? MSG_SAVE : MSG_LOAD], MENU_LIST_POS_X + ((strlen(savestate_timestamps[current_option_num]) + 1) * FONTWIDTH), (current_option_num * FONTHEIGHT) + 28, color_active_item, BG_NO_FILL);
     }
   }
 
@@ -2369,11 +2478,14 @@ u32 menu(void)
 
   void load_savestate_timestamps(void)
   {
-    for (i = 0; i < 10; i++)
+    for (i = 0; i < 11; i++)
     {
       get_savestate_filename(i, filename_buffer);
       get_savestate_info(filename_buffer, NULL, line_buffer);
-      sprintf(savestate_timestamps[i], "%d: %s", i, line_buffer);
+      if (i == 10)
+        sprintf(savestate_timestamps[i], "AUTO: %s", line_buffer);
+      else
+        sprintf(savestate_timestamps[i], "%d: %s", i, line_buffer);
     }
   }
 
@@ -2465,7 +2577,7 @@ u32 menu(void)
     i = (int)strlen(buf);
     snprintf(buf + i, sizeof(buf) - (size_t)i, "\n\n%s", MSG[MSG_ERR_CONT]);
 
-    clear_screen(COLOR32_BLACK);
+    clear_screen(COLOR15_TO_32(color_bg));
     /* mh_print (print_string) does not wrap on '\n'; only print the first line. */
     {
       u16 ypos = 6;
@@ -2479,9 +2591,9 @@ u32 menu(void)
           *nl = '\0';
 
         if (option_language == 0)
-          print_string(walk, 6, ypos, COLOR15_WHITE, COLOR15_BLACK);
+          print_string(walk, 6, ypos, color_active_item, color_bg);
         else
-          print_string_gbk(walk, 6, ypos, COLOR15_WHITE, COLOR15_BLACK);
+          print_string_gbk(walk, 6, ypos, color_active_item, color_bg);
 
         if (nl != NULL)
         {
@@ -2643,10 +2755,11 @@ u32 menu(void)
     SAVESTATE_OPTION(7),
     SAVESTATE_OPTION(8),
     SAVESTATE_OPTION(9),
+    SAVESTATE_OPTION(10),
 
-    ACTION_OPTION(NULL, NULL, MSG[MSG_STATE_MENU_1], MSG_STATE_MENU_HELP_1, 11, MSG_STATE_MENU_1),
+    ACTION_OPTION(NULL, NULL, MSG[MSG_STATE_MENU_1], MSG_STATE_MENU_HELP_1, 12, MSG_STATE_MENU_1),
 
-    ACTION_SUBMENU_OPTION(NULL, NULL, MSG[MSG_STATE_MENU_2], MSG_STATE_MENU_HELP_2, 13, MSG_STATE_MENU_2)
+    ACTION_SUBMENU_OPTION(NULL, NULL, MSG[MSG_STATE_MENU_2], MSG_STATE_MENU_HELP_2, 14, MSG_STATE_MENU_2)
   };
 
   MAKE_MENU(savestate, NULL, NULL);
@@ -2899,11 +3012,24 @@ u32 menu(void)
 
     // PSP controller - hold
     if (get_pad_input(PSP_CTRL_HOLD) != 0)
-      print_string(FONT_KEY_ICON, 6, 258, COLOR15_YELLOW, BG_NO_FILL);
+      print_string(FONT_KEY_ICON, 6, 258, color_batt_low, BG_NO_FILL);
 
     __draw_volume_status(1);
     flip_screen(1);
 
+
+    /* Triangle: delete savestate when in savestate menu */
+    if (current_menu == &savestate_menu && !first_load && current_option_num < 10)
+    {
+      if (get_pad_input(PSP_CTRL_TRIANGLE) != 0)
+      {
+        /* Wait for release BEFORE opening the dialog, so the held
+           button doesn't leak into yesno_dialog's input loop. */
+        while (get_pad_input(PSP_CTRL_TRIANGLE) != 0)
+          sceKernelDelayThread(5000);
+        menu_delete_state();
+      }
+    }
 
     gui_action = get_gui_input();
 
@@ -3047,6 +3173,8 @@ u32 menu(void)
                     menu_suspend();
                     break;
                   case 18: // Exit TempGBA
+                    if (!first_load)
+                      action_savestate_slot(10);
                     quit();
                     break;
                   default:
@@ -3061,7 +3189,7 @@ u32 menu(void)
                     menu_load_state_file();
                     break;
                   default:
-                    if (current_option->line_number < 10)
+                    if (current_option->line_number < 11)
                     {
                       if ((savestate_action != 0 ? menu_save_state() : menu_load_state()) != 0)
                       {

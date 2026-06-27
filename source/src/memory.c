@@ -3509,19 +3509,19 @@ s32 load_gamepak(char *name)
   s32 file_size = -1;
   gamepak_file_large = -1;
 
-  draw_box_alpha(110, 50, 370, 220, 0xBF000000);
-  draw_box_line(120, 60, 360, 210, COLOR15_WHITE);
+  draw_box_fill(110, 50, 370, 220, color_bg);
+  draw_box_line(120, 60, 360, 210, color_inactive_item);
   if (option_language == 0)
-	print_string(MSG[MSG_LOADING_ROM], X_POS_CENTER, 100, COLOR15_WHITE, BG_NO_FILL);
+	print_string(MSG[MSG_LOADING_ROM], X_POS_CENTER, 100, color_active_item, BG_NO_FILL);
   else
-	print_string_gbk(MSG[MSG_LOADING_ROM], X_POS_CENTER, 100, COLOR15_WHITE, BG_NO_FILL);
+	print_string_gbk(MSG[MSG_LOADING_ROM], X_POS_CENTER, 100, color_active_item, BG_NO_FILL);
   flip_screen(1);
-  draw_box_alpha(110, 50, 370, 220, 0xBF000000);
-  draw_box_line(120, 60, 360, 210, COLOR15_WHITE);
+  draw_box_fill(110, 50, 370, 220, color_bg);
+  draw_box_line(120, 60, 360, 210, color_inactive_item);
   if (option_language == 0)
-	print_string(MSG[MSG_LOADING_ROM], X_POS_CENTER, 100, COLOR15_WHITE, BG_NO_FILL);
+	print_string(MSG[MSG_LOADING_ROM], X_POS_CENTER, 100, color_active_item, BG_NO_FILL);
   else
-	print_string_gbk(MSG[MSG_LOADING_ROM], X_POS_CENTER, 100, COLOR15_WHITE, BG_NO_FILL);
+	print_string_gbk(MSG[MSG_LOADING_ROM], X_POS_CENTER, 100, color_active_item, BG_NO_FILL);
 
   scePowerLock(0);
   set_cpu_clock(PSP_CLOCK_333);
@@ -3536,9 +3536,9 @@ s32 load_gamepak(char *name)
   {
     file_size = load_gamepak_raw(name);
 	if (option_language == 0)
-		print_string(MSG[MSG_SEARCHING_BACKUP_ID], X_POS_CENTER, 148, COLOR15_WHITE, BG_NO_FILL);
+		print_string(MSG[MSG_SEARCHING_BACKUP_ID], X_POS_CENTER, 148, color_active_item, BG_NO_FILL);
     else
-		print_string_gbk(MSG[MSG_SEARCHING_BACKUP_ID], X_POS_CENTER, 148, COLOR15_WHITE, BG_NO_FILL);
+		print_string_gbk(MSG[MSG_SEARCHING_BACKUP_ID], X_POS_CENTER, 148, color_active_item, BG_NO_FILL);
     flip_screen(1);
   }
 
@@ -3652,6 +3652,43 @@ u32 load_state(char *savestate_filename)
   return result;
 }
 
+u32 load_state_silent(char *savestate_filename)
+{
+  SceUID savestate_file;
+  char savestate_path[MAX_PATH];
+  u32 prev_sound_pause = sound_pause;
+  u32 result = 0;
+
+  sound_pause = 1;
+
+  sprintf(savestate_path, "%s%s", dir_state, savestate_filename);
+
+  scePowerLock(0);
+
+  FILE_OPEN(savestate_file, savestate_path, READ);
+
+  if (FILE_CHECK_VALID(savestate_file))
+  {
+    FILE_SEEK(savestate_file, GBA_SCREEN_SIZE + sizeof(u64), SEEK_SET);
+
+    SAVESTATE_BLOCK(read);
+    FILE_CLOSE(savestate_file);
+
+    clear_metadata_area(METADATA_AREA_EWRAM, CLEAR_REASON_LOADING_STATE);
+    clear_metadata_area(METADATA_AREA_IWRAM, CLEAR_REASON_LOADING_STATE);
+    clear_metadata_area(METADATA_AREA_VRAM,  CLEAR_REASON_LOADING_STATE);
+
+    oam_update = 1;
+    gbc_sound_update = 1;
+    reg[CHANGED_PC_STATUS] = 1;
+    result = 1;
+  }
+
+  scePowerUnlock(0);
+  sound_pause = prev_sound_pause;
+  return result;
+}
+
 u32 save_state(char *savestate_filename, u16 *screen_capture)
 {
   SceUID savestate_file;
@@ -3697,6 +3734,47 @@ u32 save_state(char *savestate_filename, u16 *screen_capture)
   scePowerUnlock(0);
 
   free(savestate_write_buffer);
+  return result;
+}
+
+u32 save_state_silent(char *savestate_filename, u16 *screen_capture)
+{
+  SceUID savestate_file;
+  char savestate_path[MAX_PATH];
+  u32 prev_sound_pause = sound_pause;
+  u32 result = 0;
+  u8 *savestate_write_buffer;
+
+  sound_pause = 1;
+
+  sprintf(savestate_path, "%s%s", dir_state, savestate_filename);
+
+  savestate_write_buffer = (u8 *)safe_malloc(SAVESTATE_SIZE);
+  memset(savestate_write_buffer, 0, SAVESTATE_SIZE);
+
+  write_mem_ptr = savestate_write_buffer;
+
+  scePowerLock(0);
+
+  FILE_OPEN(savestate_file, savestate_path, WRITE);
+
+  if (FILE_CHECK_VALID(savestate_file))
+  {
+    FILE_WRITE_MEM(savestate_file, screen_capture, GBA_SCREEN_SIZE);
+
+    u64 current_time = ticker();
+    FILE_WRITE_MEM_VARIABLE(savestate_file, current_time);
+
+    SAVESTATE_BLOCK(write_mem);
+    FILE_WRITE(savestate_file, savestate_write_buffer, SAVESTATE_SIZE);
+    FILE_CLOSE(savestate_file);
+    result = 1;
+  }
+
+  scePowerUnlock(0);
+
+  free(savestate_write_buffer);
+  sound_pause = prev_sound_pause;
   return result;
 }
 

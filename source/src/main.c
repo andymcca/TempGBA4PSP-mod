@@ -577,14 +577,14 @@ static void synchronize(void)
     {
       clear_screen(0);
 	  if (option_language == 0)
-      print_string(MSG[MSG_GBA_SLEEP_MODE], X_POS_CENTER, 130, COLOR15_WHITE, BG_NO_FILL);
+      print_string(MSG[MSG_GBA_SLEEP_MODE], X_POS_CENTER, 130, color_active_item, BG_NO_FILL);
 	  else
-      print_string_gbk(MSG[MSG_GBA_SLEEP_MODE], X_POS_CENTER, 130, COLOR15_WHITE, BG_NO_FILL);
+      print_string_gbk(MSG[MSG_GBA_SLEEP_MODE], X_POS_CENTER, 130, color_active_item, BG_NO_FILL);
     }
 
     // PSP controller - hold
     if (get_pad_input(PSP_CTRL_HOLD) != 0)
-      print_string(FONT_KEY_ICON, 6, 258, COLOR15_YELLOW, BG_NO_FILL);
+      print_string(FONT_KEY_ICON, 6, 258, color_batt_low, BG_NO_FILL);
 
     // fps
     if (psp_fps_debug != 0)
@@ -1098,18 +1098,18 @@ u32 yesno_dialog(const char *text)
   const u16 dlg_x2 = 407;
   const u16 dlg_y2 = 176;
 
-  draw_box_fill(dlg_x1, dlg_y1, dlg_x2, dlg_y2, COLOR15_BLACK);
-  draw_box_line(dlg_x1, dlg_y1, dlg_x2, dlg_y2, COLOR15_WHITE);
+  draw_box_fill(dlg_x1, dlg_y1, dlg_x2, dlg_y2, color_bg);
+  draw_box_line(dlg_x1 + 10, dlg_y1 + 10, dlg_x2 - 10, dlg_y2 - 10, color_inactive_item);
 
   if (option_language == 0)
   {
-    print_string(text, X_POS_CENTER, dlg_y1 + 24, COLOR15_WHITE, COLOR15_BLACK);
+    print_string(text, X_POS_CENTER, dlg_y1 + 20, color_active_item, color_bg);
   }
   else
   {
-    print_string_gbk(text, X_POS_CENTER, dlg_y1 + 24, COLOR15_WHITE, COLOR15_BLACK);
+    print_string_gbk(text, X_POS_CENTER, dlg_y1 + 20, color_active_item, color_bg);
   }
-  print_swap_aware(MSG[MSG_YES_NO], X_POS_CENTER, dlg_y1 + 56, COLOR15_WHITE, COLOR15_BLACK);
+  print_swap_aware(MSG[MSG_YES_NO], X_POS_CENTER, dlg_y1 + 50, color_active_item, color_bg);
 
   flip_screen(1);
 
