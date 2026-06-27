@@ -7,22 +7,39 @@
 #include <pspkernel.h>
 #include <psppower.h>
 
-#define CPU_CLOCK_COUNT 14
+#define CPU_CLOCK_LADDER_ARK5   0
+#define CPU_CLOCK_LADDER_OTHER  1
+
+#define CPU_CLOCK_COUNT_MAX     14
+#define CPU_CLOCK_COUNT_ARK5    11
+#define CPU_CLOCK_COUNT_OTHER   14
 #define CPU_CLOCK_BASELINE_INDEX 3
-#define PLL_DEFAULT_DEN 0x12
+
 #define PLL_BASE_FREQ 37.0f
 #define PLL_DEFAULT_RATIO 1.0f
 #define PLL_DEFAULT_FREQUENCY 333
 #define DELAY_AFTER_CLOCK_CHANGE 300000
 #define DELAY_PLL_RAMP_STEP 50000
 
-static const u8 cpu_clock_multipliers[CPU_CLOCK_COUNT] =
+#define PLL_DEN_ARK5  0x14
+#define PLL_DEN_OTHER 0x12
+
+static const u8 cpu_clock_multipliers_ark5[CPU_CLOCK_COUNT_ARK5] =
+{
+  0x78, 0x8f, 0xa2, 0xb4,
+  0xcf, 0xda, 0xe5, 0xef, 0xf5, 0xfa, 0xff
+};
+
+static const u8 cpu_clock_multipliers_other[CPU_CLOCK_COUNT_OTHER] =
 {
   0x6c, 0x81, 0x92, 0xa2,
   0xab, 0xb4, 0xbd, 0xc6, 0xcf, 0xd8, 0xe1, 0xea, 0xf3, 0xfc
 };
 
-static u32 cpu_clock_nominal_mhz[CPU_CLOCK_COUNT];
+static u32 active_ladder = CPU_CLOCK_LADDER_ARK5;
+static u32 active_count = CPU_CLOCK_COUNT_ARK5;
+static u8 active_den = PLL_DEN_ARK5;
+static u32 cpu_clock_nominal_mhz[CPU_CLOCK_COUNT_MAX];
 static u32 applied_clock_index = CPU_CLOCK_BASELINE_INDEX;
 static int memory_unlocked = 0;
 
@@ -54,6 +71,14 @@ static int memory_unlocked = 0;
     "  addiu $t0, $t0, -1 \n" "  bnez  $t0, 1b \n" "  nop \n" \
     ".set pop \n" : : : "$t0", "memory")
 
+static const u8 *active_multipliers(void)
+{
+  if (active_ladder == CPU_CLOCK_LADDER_OTHER)
+    return cpu_clock_multipliers_other;
+
+  return cpu_clock_multipliers_ark5;
+}
+
 static void pll_ready(void)
 {
   do
@@ -65,18 +90,19 @@ static void pll_ready(void)
   sync();
 }
 
-static u32 nominal_mhz_from_multiplier(u8 mul)
+static u32 nominal_mhz_from_multiplier(u8 mul, u8 den)
 {
-  float mhz = PLL_BASE_FREQ * (((float)mul) / (float)PLL_DEFAULT_DEN) * PLL_DEFAULT_RATIO;
+  float mhz = PLL_BASE_FREQ * (((float)mul) / (float)den) * PLL_DEFAULT_RATIO;
   return (u32)(mhz + 0.5f);
 }
 
 static void build_nominal_table(void)
 {
   u32 i;
+  const u8 *muls = active_multipliers();
 
-  for (i = 0; i < CPU_CLOCK_COUNT; i++)
-    cpu_clock_nominal_mhz[i] = nominal_mhz_from_multiplier(cpu_clock_multipliers[i]);
+  for (i = 0; i < active_count; i++)
+    cpu_clock_nominal_mhz[i] = nominal_mhz_from_multiplier(muls[i], active_den);
 }
 
 static void unlock_memory(void)
@@ -136,20 +162,44 @@ static void adjust_domain_ratios(void)
   sceKernelResumeDispatchThread(state);
 }
 
+static int read_pll_mhz(void);
+
 static u32 multiplier_to_table_index(u8 mul)
 {
   u32 i;
   u32 best = CPU_CLOCK_BASELINE_INDEX;
   u32 best_diff = 0xff;
+  const u8 *muls = active_multipliers();
 
-  for (i = 0; i < CPU_CLOCK_COUNT; i++)
+  for (i = 0; i < active_count; i++)
   {
     u32 diff;
 
-    if (mul >= cpu_clock_multipliers[i])
-      diff = mul - cpu_clock_multipliers[i];
+    if (mul >= muls[i])
+      diff = mul - muls[i];
     else
-      diff = cpu_clock_multipliers[i] - mul;
+      diff = muls[i] - mul;
+
+    if (diff < best_diff)
+    {
+      best_diff = diff;
+      best = i;
+    }
+  }
+
+  return best;
+}
+
+static u32 index_from_pll_mhz(int mhz)
+{
+  u32 i;
+  u32 best = CPU_CLOCK_BASELINE_INDEX;
+  u32 best_diff = 0xffffffff;
+
+  for (i = 0; i < active_count; i++)
+  {
+    u32 nominal = cpu_clock_nominal_mhz[i];
+    u32 diff = ((u32)mhz > nominal) ? ((u32)mhz - nominal) : (nominal - (u32)mhz);
 
     if (diff < best_diff)
     {
@@ -163,10 +213,17 @@ static u32 multiplier_to_table_index(u8 mul)
 
 static u32 read_current_table_index(void)
 {
-  const u8 current_mul = (u8)((hw(0xbc1000fc) & 0xff00) >> 8);
+  const u32 pll_reg = hw(0xbc1000fc);
+  const u8 current_mul = (u8)((pll_reg & 0xff00) >> 8);
+  const u8 current_den = (u8)(pll_reg & 0xff);
 
   sync();
-  return multiplier_to_table_index(current_mul);
+
+  /* After a ladder switch the PLL may still use the previous denominator. */
+  if (current_den == active_den)
+    return multiplier_to_table_index(current_mul);
+
+  return index_from_pll_mhz(read_pll_mhz());
 }
 
 static void write_pll_multiplier(u8 mul)
@@ -181,7 +238,7 @@ static void write_pll_multiplier(u8 mul)
   pll_ready();
   settle();
 
-  hw(0xbc1000fc) = (hw(0xbc1000fc) & 0xffff0000) | ((u32)mul << 8) | PLL_DEFAULT_DEN;
+  hw(0xbc1000fc) = (hw(0xbc1000fc) & 0xffff0000) | ((u32)mul << 8) | active_den;
   sync();
   settle();
 
@@ -209,6 +266,10 @@ static int apply_clock_index(u32 index)
 {
   u32 current_index;
   s32 step;
+  const u8 *muls = active_multipliers();
+
+  if (index >= active_count)
+    index = active_count - 1;
 
   if (!memory_unlocked)
     unlock_memory();
@@ -220,9 +281,18 @@ static int apply_clock_index(u32 index)
     u32 nominal = cpu_clock_nominal_mhz[index];
     u32 actual = (u32)read_pll_mhz();
     u32 diff = (actual > nominal) ? (actual - nominal) : (nominal - actual);
+    const u8 current_den = (u8)(hw(0xbc1000fc) & 0xff);
 
-    if (diff <= 2)
+    if (diff <= 2 && current_den == active_den)
     {
+      applied_clock_index = index;
+      scePowerTick(0);
+      return 0;
+    }
+
+    if (current_den != active_den)
+    {
+      write_pll_multiplier(muls[index]);
       applied_clock_index = index;
       scePowerTick(0);
       return 0;
@@ -252,7 +322,7 @@ static int apply_clock_index(u32 index)
   while (current_index != index)
   {
     current_index += step;
-    write_pll_multiplier(cpu_clock_multipliers[current_index]);
+    write_pll_multiplier(muls[current_index]);
     sceKernelDelayThread(DELAY_PLL_RAMP_STEP);
   }
 
@@ -261,15 +331,55 @@ static int apply_clock_index(u32 index)
   return 0;
 }
 
+static void select_ladder(u32 ladder)
+{
+  if (ladder > CPU_CLOCK_LADDER_OTHER)
+    ladder = CPU_CLOCK_LADDER_OTHER;
+
+  active_ladder = ladder;
+
+  if (ladder == CPU_CLOCK_LADDER_OTHER)
+  {
+    active_count = CPU_CLOCK_COUNT_OTHER;
+    active_den = PLL_DEN_OTHER;
+  }
+  else
+  {
+    active_count = CPU_CLOCK_COUNT_ARK5;
+    active_den = PLL_DEN_ARK5;
+  }
+
+  build_nominal_table();
+
+  if (memory_unlocked)
+    applied_clock_index = read_current_table_index();
+}
+
 int kuInitCpuClock(void)
 {
-  build_nominal_table();
+  select_ladder(CPU_CLOCK_LADDER_ARK5);
 
   if (!memory_unlocked)
     unlock_memory();
 
   applied_clock_index = read_current_table_index();
   return 0;
+}
+
+int kuSetCpuClockLadder(u32 ladder)
+{
+  select_ladder(ladder);
+  return 0;
+}
+
+u32 kuGetCpuClockLadder(void)
+{
+  return active_ladder;
+}
+
+u32 kuGetCpuClockCount(void)
+{
+  return active_count;
 }
 
 int kuSyncCpuClockFromHardware(void)
@@ -291,8 +401,8 @@ u32 kuGetCpuClockIndex(void)
 
 int kuSetCpuClockIndex(u32 index)
 {
-  if (index >= CPU_CLOCK_COUNT)
-    index = CPU_CLOCK_COUNT - 1;
+  if (index >= active_count)
+    index = active_count - 1;
 
   return apply_clock_index(index);
 }
@@ -307,8 +417,8 @@ int kuGetCpuClockMhz(void)
 
 u32 kuGetCpuClockNominalMhz(u32 index)
 {
-  if (index >= CPU_CLOCK_COUNT)
-    index = CPU_CLOCK_COUNT - 1;
+  if (index >= active_count)
+    index = active_count - 1;
 
   return cpu_clock_nominal_mhz[index];
 }

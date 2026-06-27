@@ -1758,14 +1758,20 @@ static void print_menu_line(const char *str, s16 x, s16 y, u16 fg, s16 bg)
 static void menu_adjust_clock_index(int delta)
 {
   u32 index = option_clock_index;
+  u32 count = get_cpu_clock_count();
 
   if (delta > 0)
-    index = (index + 1) % CPU_CLOCK_COUNT;
+    index = (index + 1) % count;
   else
-    index = (index + CPU_CLOCK_COUNT - 1) % CPU_CLOCK_COUNT;
+    index = (index + count - 1) % count;
 
   option_clock_index = index;
   option_clock_display_mhz = get_cpu_clock_nominal_mhz(option_clock_index);
+}
+
+static void menu_passive_clock_ladder(void)
+{
+  set_cpu_clock_ladder_from_menu(option_clock_ladder);
 }
 
 static void format_menu_option_line(char *dst, u32 dst_size, const MenuOptionType *opt)
@@ -2176,8 +2182,8 @@ u32 menu(void)
   {
     option_frameskip_type = FRAMESKIP_AUTO;
     option_frameskip_value = 9;
-    option_clock_index = CPU_CLOCK_BASELINE_INDEX;
-    refresh_cpu_clock_display_from_option();
+    option_clock_ladder = CPU_CLOCK_LADDER_ARK5;
+    set_cpu_clock_ladder_from_menu(CPU_CLOCK_LADDER_ARK5);
     option_stack_optimize = 1;
     option_ram_dynarec_policy = RAM_DYNAREC_PARTIAL_WITH_REUSE;
     option_hblank_irq_window_start = 1;
@@ -2638,23 +2644,29 @@ u32 menu(void)
 
   MAKE_MENU(graphics, NULL, NULL);
 
+  static const char *clock_ladder_options[] =
+  {
+    "ARK5",
+    "Other"
+  };
+
   MenuOptionType emulator_options[] =
   {
     STRING_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_3], frameskip_options, &option_frameskip_type, 3, MSG_OPTION_MENU_HELP_3, 0, MSG_TOOLTIP_FRAMESKIP_TYPE, MSG_OPTION_MENU_3),
     NUMERIC_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_4], &option_frameskip_value, 10, MSG_OPTION_MENU_HELP_4, 1, MSG_TOOLTIP_FRAMESKIP_VALUE, MSG_OPTION_MENU_4),
-    NUMERIC_SELECTION_OPTION(NULL, MSG[MSG_OPTION_MENU_5], &option_clock_index, CPU_CLOCK_COUNT, MSG_OPTION_MENU_HELP_5, 2, MSG_OPTION_MENU_5),
+    NUMERIC_SELECTION_OPTION(NULL, MSG[MSG_OPTION_MENU_5], &option_clock_index, CPU_CLOCK_COUNT_MAX, MSG_OPTION_MENU_HELP_5, 2, MSG_OPTION_MENU_5),
+    STRING_SELECTION_OPTION(menu_passive_clock_ladder, MSG[MSG_OPTION_MENU_CLOCK_LADDER], clock_ladder_options, &option_clock_ladder, 2, MSG_OPTION_MENU_HELP_CLOCK_LADDER, 3, MSG_OPTION_MENU_CLOCK_LADDER),
 
-    STRING_SELECTION_OPTION_TT(menu_passive_ram_dynarec_policy, MSG[MSG_OPTION_MENU_BLOCK_CHECKSUM_REUSE], ram_dynarec_options, &option_ram_dynarec_policy, 3, MSG_OPTION_MENU_HELP_BLOCK_CHECKSUM_REUSE, 4, MSG_TOOLTIP_RAM_DYNAREC_MODE, MSG_OPTION_MENU_BLOCK_CHECKSUM_REUSE),
-    NUMERIC_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_HBLANK_IRQ_WIN_START], &option_hblank_irq_window_start, 228, MSG_OPTION_MENU_HELP_HBLANK_IRQ_WIN_START, 5, MSG_TOOLTIP_HBLANK_WIN_START, MSG_OPTION_MENU_HBLANK_IRQ_WIN_START),
-    NUMERIC_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_HBLANK_IRQ_WIN_END], &option_hblank_irq_window_end, 228, MSG_OPTION_MENU_HELP_HBLANK_IRQ_WIN_END, 6, MSG_TOOLTIP_HBLANK_WIN_END, MSG_OPTION_MENU_HBLANK_IRQ_WIN_END),
+    STRING_SELECTION_OPTION_TT(menu_passive_ram_dynarec_policy, MSG[MSG_OPTION_MENU_BLOCK_CHECKSUM_REUSE], ram_dynarec_options, &option_ram_dynarec_policy, 3, MSG_OPTION_MENU_HELP_BLOCK_CHECKSUM_REUSE, 5, MSG_TOOLTIP_RAM_DYNAREC_MODE, MSG_OPTION_MENU_BLOCK_CHECKSUM_REUSE),
+    NUMERIC_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_HBLANK_IRQ_WIN_START], &option_hblank_irq_window_start, 228, MSG_OPTION_MENU_HELP_HBLANK_IRQ_WIN_START, 6, MSG_TOOLTIP_HBLANK_WIN_START, MSG_OPTION_MENU_HBLANK_IRQ_WIN_START),
+    NUMERIC_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_HBLANK_IRQ_WIN_END], &option_hblank_irq_window_end, 228, MSG_OPTION_MENU_HELP_HBLANK_IRQ_WIN_END, 7, MSG_TOOLTIP_HBLANK_WIN_END, MSG_OPTION_MENU_HBLANK_IRQ_WIN_END),
+    STRING_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_7], stack_optimize_options, &option_stack_optimize, 2, MSG_OPTION_MENU_HELP_7, 9, MSG_TOOLTIP_STACK_OPTIMIZE, MSG_OPTION_MENU_7),
 
-    STRING_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_7], stack_optimize_options, &option_stack_optimize, 2, MSG_OPTION_MENU_HELP_7, 8, MSG_TOOLTIP_STACK_OPTIMIZE, MSG_OPTION_MENU_7),
+    STRING_SELECTION_OPTION(NULL, MSG[MSG_OPTION_MENU_8], yes_no_options, &option_boot_mode, 2, MSG_OPTION_MENU_HELP_8, 11, MSG_OPTION_MENU_8),
 
-    STRING_SELECTION_OPTION(NULL, MSG[MSG_OPTION_MENU_8], yes_no_options, &option_boot_mode, 2, MSG_OPTION_MENU_HELP_8, 10, MSG_OPTION_MENU_8),
+    ACTION_OPTION(menu_emulator_default, NULL, MSG[MSG_OPTION_MENU_DEFAULT], MSG_OPTION_MENU_HELP_DEFAULT, 13, MSG_OPTION_MENU_DEFAULT),
 
-    ACTION_OPTION(menu_emulator_default, NULL, MSG[MSG_OPTION_MENU_DEFAULT], MSG_OPTION_MENU_HELP_DEFAULT, 12, MSG_OPTION_MENU_DEFAULT),
-
-    ACTION_SUBMENU_OPTION(NULL, NULL, MSG[MSG_OPTION_MENU_11], MSG_OPTION_MENU_HELP_11, 14, MSG_OPTION_MENU_11)
+    ACTION_SUBMENU_OPTION(NULL, NULL, MSG[MSG_OPTION_MENU_11], MSG_OPTION_MENU_HELP_11, 15, MSG_OPTION_MENU_11)
   };
 
   MAKE_MENU(emulator, NULL, NULL);
@@ -3489,7 +3501,7 @@ s32 save_config_file(void)
     file_options[3] = psp_fps_debug | (psp_mhz_debug << 1);
     file_options[4] = option_frameskip_type;
     file_options[5] = option_frameskip_value;
-    file_options[6] = 0; /* reserved: clock speed is per-game only */
+    file_options[6] = option_clock_ladder % 2;
     file_options[7] = option_sound_volume;
     file_options[8] = option_stack_optimize;
     /* Store mode with +4 marker so old 0/1 boolean configs can be migrated. */
@@ -3559,7 +3571,9 @@ s32 load_game_config_file(void)
       option_screen_filter    = file_options[2] % 2;
       option_frameskip_type   = file_options[3] % 3;
       option_frameskip_value  = file_options[4];
+      apply_cpu_clock_ladder_setting(clock_ladder_from_game_config(file_options[5]));
       option_clock_index      = clock_index_from_game_config(file_options[5]);
+      option_clock_index      = clamp_cpu_clock_index(option_clock_index);
       refresh_cpu_clock_display_from_option();
       option_sound_volume     = file_options[6] % 11;
 
@@ -3639,6 +3653,7 @@ s32 load_config_file(void)
       psp_mhz_debug           = (file_options[3] >> 1) & 1;
       option_frameskip_type   = file_options[4] % 3;
       option_frameskip_value  = file_options[5];
+      option_clock_ladder     = file_options[6] % 2;
       option_sound_volume     = file_options[7] % 11;
       option_stack_optimize   = file_options[8] % 2;
       {

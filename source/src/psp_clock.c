@@ -14,8 +14,10 @@
 
 #include "common.h"
 
-#define CPU_CLOCK_CFG_VERSION       1
-#define CPU_CLOCK_CFG_VERSION_SHIFT 24
+#define CPU_CLOCK_CFG_VERSION_V1      1
+#define CPU_CLOCK_CFG_VERSION         2
+#define CPU_CLOCK_CFG_VERSION_SHIFT   24
+#define CPU_CLOCK_CFG_LADDER_SHIFT    16
 #define CPU_CLOCK_MHZ_MIN           220
 #define CPU_CLOCK_MHZ_MAX           520
 #define CPU_CLOCK_MHZ_MATCH         2
@@ -23,10 +25,13 @@
 u32 startup_clock_index = CPU_CLOCK_BASELINE_INDEX;
 u32 option_clock_index = CPU_CLOCK_BASELINE_INDEX;
 u32 option_clock_display_mhz = 333;
+u32 option_clock_ladder = CPU_CLOCK_LADDER_ARK5;
 
 static int ku_bridge_ready = 0;
+static u32 ladder_generation = 0;
 
 static u32 clock_index_from_nominal_mhz(u32 mhz);
+static int ramp_cpu_clock_to_index(u32 index);
 
 static int ensure_ku_bridge(void)
 {
@@ -52,11 +57,64 @@ static int ensure_ku_bridge(void)
   if (kuInitCpuClock() < 0)
     return -1;
 
+  kuSetCpuClockLadder(option_clock_ladder);
+
   ku_bridge_ready = 1;
   return 0;
 }
 
-static void prepare_for_clock_change(void)
+void apply_cpu_clock_ladder_setting(u32 ladder)
+{
+  u32 prev_ladder = option_clock_ladder;
+
+  if (ladder > CPU_CLOCK_LADDER_OTHER)
+    ladder = CPU_CLOCK_LADDER_OTHER;
+
+  option_clock_ladder = ladder;
+
+  if (ku_bridge_ready)
+    kuSetCpuClockLadder(ladder);
+
+  if (prev_ladder != ladder)
+  {
+    ladder_generation++;
+    option_clock_index = clamp_cpu_clock_index(option_clock_index);
+    refresh_cpu_clock_display_from_option();
+  }
+}
+
+void set_cpu_clock_ladder(u32 ladder)
+{
+  apply_cpu_clock_ladder_setting(ladder);
+  option_clock_index = CPU_CLOCK_BASELINE_INDEX;
+  apply_cpu_clock_index(CPU_CLOCK_BASELINE_INDEX);
+}
+
+void set_cpu_clock_ladder_from_menu(u32 ladder)
+{
+  apply_cpu_clock_ladder_setting(ladder);
+  option_clock_index = CPU_CLOCK_BASELINE_INDEX;
+  refresh_cpu_clock_display_from_option();
+  ramp_cpu_clock_to_index(CPU_CLOCK_MENU_INDEX);
+}
+
+u32 get_cpu_clock_count(void)
+{
+  if (ku_bridge_ready)
+    return kuGetCpuClockCount();
+
+  if (option_clock_ladder == CPU_CLOCK_LADDER_OTHER)
+    return CPU_CLOCK_COUNT_MAX;
+
+  return 11;
+}
+
+u32 get_cpu_clock_ladder(void)
+{
+  return option_clock_ladder;
+}
+
+void prepare_for_clock_change(void)
 {
   scePowerUnlock(0);
 
@@ -66,8 +124,10 @@ static void prepare_for_clock_change(void)
 
 u32 clamp_cpu_clock_index(u32 index)
 {
-  if (index >= CPU_CLOCK_COUNT)
-    return CPU_CLOCK_COUNT - 1;
+  u32 count = get_cpu_clock_count();
+
+  if (index >= count)
+    return count - 1;
 
   return index;
 }
@@ -160,7 +220,7 @@ static u32 clock_index_from_nominal_mhz(u32 mhz)
   u32 best = CPU_CLOCK_BASELINE_INDEX;
   u32 best_diff = 0xffffffff;
 
-  for (i = 0; i < CPU_CLOCK_COUNT; i++)
+  for (i = 0; i < get_cpu_clock_count(); i++)
   {
     u32 nominal = get_cpu_clock_nominal_mhz(i);
     u32 diff = (mhz > nominal) ? (mhz - nominal) : (nominal - mhz);
@@ -195,6 +255,9 @@ static int clock_hardware_at_index(u32 index)
 
 static int ramp_cpu_clock_to_index(u32 index)
 {
+  static u32 last_ramp_generation = 0;
+  int force_ramp = (last_ramp_generation != ladder_generation);
+
   index = clamp_cpu_clock_index(index);
 
   prepare_for_clock_change();
@@ -202,7 +265,9 @@ static int ramp_cpu_clock_to_index(u32 index)
   if (ensure_ku_bridge() < 0)
     return -1;
 
-  if (clock_hardware_at_index(index))
+  last_ramp_generation = ladder_generation;
+
+  if (!force_ramp && clock_hardware_at_index(index))
     return 0;
 
   return kuSetCpuClockIndex(index);
@@ -283,14 +348,25 @@ void quit_cpu_clock_cleanup(void)
 u32 clock_mhz_for_game_config(u32 index)
 {
   return (CPU_CLOCK_CFG_VERSION << CPU_CLOCK_CFG_VERSION_SHIFT) |
+         ((option_clock_ladder & 1) << CPU_CLOCK_CFG_LADDER_SHIFT) |
          get_cpu_clock_nominal_mhz(index);
+}
+
+u32 clock_ladder_from_game_config(u32 stored)
+{
+  u32 version = stored >> CPU_CLOCK_CFG_VERSION_SHIFT;
+
+  if (version >= CPU_CLOCK_CFG_VERSION)
+    return (stored >> CPU_CLOCK_CFG_LADDER_SHIFT) & 1;
+
+  return option_clock_ladder;
 }
 
 u32 clock_index_from_game_config(u32 stored)
 {
   u32 version = stored >> CPU_CLOCK_CFG_VERSION_SHIFT;
 
-  if (version == CPU_CLOCK_CFG_VERSION)
+  if (version == CPU_CLOCK_CFG_VERSION_V1 || version == CPU_CLOCK_CFG_VERSION)
     return clock_index_from_nominal_mhz(stored & 0xFFFF);
 
   if (stored >= CPU_CLOCK_MHZ_MIN && stored <= CPU_CLOCK_MHZ_MAX)

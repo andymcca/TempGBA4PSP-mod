@@ -23,6 +23,9 @@ int kuCtrlPeekBufferPositive(SceCtrlData *pad_data, int count);
 int kuCtrlReadBufferPositive(SceCtrlData *pad_data, int count);
 
 int kuInitCpuClock(void);
+int kuSetCpuClockLadder(u32 ladder);
+u32 kuGetCpuClockLadder(void);
+u32 kuGetCpuClockCount(void);
 int kuSyncCpuClockFromHardware(void);
 u32 kuGetCpuClockIndex(void);
 int kuSetCpuClockIndex(u32 index);
