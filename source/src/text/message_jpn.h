@@ -578,6 +578,12 @@
   // MSG_SAVE_STATE_NO
   "セーブスロット: %d",
 
+  // MSG_LOAD_STATE_AUTO
+  "状態スロットの読み込み: AUTO",
+
+  // MSG_SAVE_STATE_AUTO
+  "セーブスロット: AUTO",
+
   // MSG_YES_NO
   FONT_BTN_CIRCLE_GBK ":はい   " FONT_BTN_CROSS_GBK ":いいえ",
 
@@ -846,5 +852,14 @@
 
   // MSG_AUTO_SAVESTATE_LOAD_PROMPT
   "自動セーブ状態を読み込む?",
+
+  // MSG_LOAD_ROM_AND_STATE
+  "%sを読み込み、セーブステートを保存する?",
+
+  // MSG_LOAD_STATE_FILE
+  "セーブステートファイルを読み込む?",
+
+  // MSG_ERR_ROM_NOT_FOUND
+  "ROM ファイルが見つかりません",
 
 },

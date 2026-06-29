@@ -63,6 +63,7 @@ int date_format = 0;
 u32 enable_home_menu = 1;
 
 u32 sleep_flag = 0;
+u32 sleep_auto_saved = 0;
 
 u32 synchronize_flag = 1;
 u32 psp_fps_debug = 0;
@@ -933,6 +934,12 @@ void reset_gba(void)
 
 static void psp_sleep_loop(void)
 {
+  if (!sleep_auto_saved && gamepak_filename[0] != '\0')
+  {
+    auto_savestate_sleep();
+    sleep_auto_saved = 1;
+  }
+
   if (FILE_CHECK_VALID(gamepak_file_large))
   {
     s32 i;
@@ -982,6 +989,11 @@ static int power_callback(int unknown, int powerInfo, void *arg)
   if ((powerInfo & PSP_POWER_CB_SUSPENDING) != 0)
   {
     sleep_flag = 1;
+    if (!sleep_auto_saved && gamepak_filename[0] != '\0')
+    {
+      auto_savestate_sleep();
+      sleep_auto_saved = 1;
+    }
   }
   else
 
@@ -990,6 +1002,7 @@ static int power_callback(int unknown, int powerInfo, void *arg)
     psp_sound_frequency(SOUND_SAMPLES, SOUND_FREQUENCY);
 
     sleep_flag = 0;
+    sleep_auto_saved = 0;
   }
 
   return 0;

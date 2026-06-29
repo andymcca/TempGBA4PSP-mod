@@ -578,6 +578,12 @@
   // MSG_SAVE_STATE_NO
   "Save state slot: %d",
 
+  // MSG_LOAD_STATE_AUTO
+  "Load state slot: AUTO",
+
+  // MSG_SAVE_STATE_AUTO
+  "Save state slot: AUTO",
+
   // MSG_YES_NO
   FONT_BTN_CIRCLE_GBK ":Yes   " FONT_BTN_CROSS_GBK ":No",
 
@@ -846,5 +852,14 @@
 
   // MSG_AUTO_SAVESTATE_LOAD_PROMPT
   "Load auto-savestate?",
+
+  // MSG_LOAD_ROM_AND_STATE
+  "Load %s and savestate?",
+
+  // MSG_LOAD_STATE_FILE
+  "Load savestate file?",
+
+  // MSG_ERR_ROM_NOT_FOUND
+  "ROM file not found",
 
 },

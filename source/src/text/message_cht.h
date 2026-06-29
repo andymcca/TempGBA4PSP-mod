@@ -578,6 +578,12 @@
   // MSG_SAVE_STATE_NO
   "存檔槽: %d",
 
+  // MSG_LOAD_STATE_AUTO
+  "載入狀態槽: AUTO",
+
+  // MSG_SAVE_STATE_AUTO
+  "存檔槽: AUTO",
+
   // MSG_YES_NO
   FONT_BTN_CIRCLE_GBK ":是的   " FONT_BTN_CROSS_GBK ":不",
 
@@ -847,5 +853,14 @@
 
   // MSG_AUTO_SAVESTATE_LOAD_PROMPT
   "載入自動儲存狀態?",
+
+  // MSG_LOAD_ROM_AND_STATE
+  "載入 %s 並儲存遊戲狀態?",
+
+  // MSG_LOAD_STATE_FILE
+  "載入存檔狀態檔案?",
+
+  // MSG_ERR_ROM_NOT_FOUND
+  "找不到 ROM 檔案",
 
 },

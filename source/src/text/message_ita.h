@@ -578,6 +578,12 @@
   // MSG_SAVE_STATE_NO
   "Slot salvataggio rapido: %d",
 
+  // MSG_LOAD_STATE_AUTO
+  "Slot caricamento rapido: AUTO",
+
+  // MSG_SAVE_STATE_AUTO
+  "Slot salvataggio rapido: AUTO",
+
   // MSG_YES_NO
   FONT_BTN_CIRCLE_GBK ":Si   " FONT_BTN_CROSS_GBK ":No",
 
@@ -846,5 +852,14 @@
 
   // MSG_AUTO_SAVESTATE_LOAD_PROMPT
   "Caricare stato di salvataggio automatico?",
+
+  // MSG_LOAD_ROM_AND_STATE
+  "Caricare %s e stato di salvataggio?",
+
+  // MSG_LOAD_STATE_FILE
+  "Caricare file di stato di salvataggio?",
+
+  // MSG_ERR_ROM_NOT_FOUND
+  "File ROM non trovato",
 
 },

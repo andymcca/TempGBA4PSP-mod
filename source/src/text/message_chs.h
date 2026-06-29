@@ -578,6 +578,12 @@
   // MSG_SAVE_STATE_NO
   "保存状态槽: %d",
 
+  // MSG_LOAD_STATE_AUTO
+  "加载状态槽: AUTO",
+
+  // MSG_SAVE_STATE_AUTO
+  "保存状态槽: AUTO",
+
   // MSG_YES_NO
   FONT_BTN_CIRCLE_GBK ":是   " FONT_BTN_CROSS_GBK ":否",
 
@@ -845,6 +851,15 @@
   "100",
 
   // MSG_AUTO_SAVESTATE_LOAD_PROMPT
-  "Load auto-savestate?",
+  "加载自动保存状态?",
+
+  // MSG_LOAD_ROM_AND_STATE
+  "加载 %s 并保存状态?",
+
+  // MSG_LOAD_STATE_FILE
+  "加载保存状态文件?",
+
+  // MSG_ERR_ROM_NOT_FOUND
+  "未找到 ROM 文件",
 
 },

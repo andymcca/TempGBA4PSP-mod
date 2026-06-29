@@ -3616,7 +3616,10 @@ u32 load_state(char *savestate_filename)
   u32 prev_sound_pause = sound_pause;
   u32 result = 0;
 
-  sprintf(confirm_text, MSG[MSG_LOAD_STATE_NO], (int)savestate_slot);
+  if (savestate_slot == 10)
+    sprintf(confirm_text, MSG[MSG_LOAD_STATE_AUTO]);
+  else
+    sprintf(confirm_text, MSG[MSG_LOAD_STATE_NO], (int)savestate_slot);
   sound_pause = 1;
   if (yesno_dialog(confirm_text) != 0)
   {
@@ -3698,7 +3701,10 @@ u32 save_state(char *savestate_filename, u16 *screen_capture)
   u32 result = 0;
   u8 *savestate_write_buffer;
 
-  sprintf(confirm_text, MSG[MSG_SAVE_STATE_NO], (int)savestate_slot);
+  if (savestate_slot == 10)
+    sprintf(confirm_text, MSG[MSG_SAVE_STATE_AUTO]);
+  else
+    sprintf(confirm_text, MSG[MSG_SAVE_STATE_NO], (int)savestate_slot);
   sound_pause = 1;
   if (yesno_dialog(confirm_text) != 0)
   {

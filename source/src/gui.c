@@ -369,6 +369,14 @@ static void draw_status_bar(void);
 /* Forward declaration for color reset */
 void menu_reset_single_color(u32 idx);
 
+/* Forward declarations for theme and color picker */
+void apply_theme(u32 theme);
+void menu_pick_color(void);
+
+/* Forward declarations for savestate slot helpers */
+static u32 action_savestate_slot(u32 slot);
+static u32 action_loadstate_slot(u32 slot);
+
 #define TEXT_TOOLTIP_POS_Y  (210)
 #define MENU_LIST_POS_X     (10) //18 default
 
@@ -1659,6 +1667,24 @@ static void get_savestate_filename(u32 slot, char *name_buffer)
   }
 }
 
+void auto_savestate_sleep(void)
+{
+    if (gamepak_filename[0] == '\0')
+        return;
+    action_savestate_slot(10);
+}
+
+static u32 savestate_file_exists(u32 slot)
+{
+    char savestate_filename[MAX_FILE];
+    char savestate_path[MAX_PATH];
+    SceIoStat stat;
+
+    get_savestate_filename(slot, savestate_filename);
+    snprintf(savestate_path, sizeof(savestate_path), "%s%s", dir_state, savestate_filename);
+    return (sceIoGetstat(savestate_path, &stat) >= 0);
+}
+
 
 u32 action_loadstate(void)
 {
@@ -1997,7 +2023,10 @@ u32 menu(void)
     save_game_config_file();
 
     if (!first_load)
+    {
       update_backup_immediately();
+      auto_savestate_sleep();
+    }
 
     scePowerTick(0);
     scePowerRequestSuspend();
@@ -2128,20 +2157,174 @@ u32 menu(void)
   void menu_load_state_file(void)
   {
     const char *file_ext[] = { ".svs", NULL };
+    char rom_name[MAX_FILE];
+    char rom_path[MAX_PATH];
+    char dialog_msg[128];
+    u32 same_rom = 0;
+    u32 slot_parsed = 0;
+    u32 file_browser_repeat = 1;
 
-    if ((load_file(file_ext, filename_buffer, dir_state) == 0) && !first_load)
+    while (file_browser_repeat)
     {
-      if (load_state(filename_buffer) != 0)
+      file_browser_repeat = 0;
+
+      if (load_file(file_ext, filename_buffer, dir_state) == 0)
       {
-        return_value = 1;
-        repeat = 0;
+        /* Extract ROM base name from savestate filename.
+           "RomName_5.svs" -> "RomName", "RomName_auto.svs" -> "RomName" */
+        {
+            char temp_name[MAX_FILE];
+            strncpy(temp_name, filename_buffer, sizeof(temp_name) - 1);
+            temp_name[sizeof(temp_name) - 1] = '\0';
+
+            char *underscore = strrchr(temp_name, '_');
+            if (underscore != NULL)
+            {
+                *underscore = '\0';
+                strncpy(rom_name, temp_name, sizeof(rom_name) - 1);
+                rom_name[sizeof(rom_name) - 1] = '\0';
+
+                /* Parse slot number for same-ROM case */
+                if (strncmp(underscore + 1, "auto.svs", 8) == 0)
+                    slot_parsed = 10;
+                else
+                    slot_parsed = (u32)atoi(underscore + 1);
+            }
+            else
+            {
+                strncpy(rom_name, temp_name, sizeof(rom_name) - 1);
+                rom_name[sizeof(rom_name) - 1] = '\0';
+            }
+        }
+
+        /* Check if this savestate belongs to the currently running ROM */
+        if (!first_load && gamepak_filename[0] != '\0')
+        {
+            char current_base[MAX_FILE];
+            change_ext(gamepak_filename, current_base, "");
+            if (strcasecmp(current_base, rom_name) == 0)
+                same_rom = 1;
+        }
+
+        if (same_rom)
+        {
+            /* Scenario 3: Same ROM — just load the savestate */
+            savestate_slot = slot_parsed;
+            snprintf(dialog_msg, sizeof(dialog_msg), "%s",
+                     MSG[MSG_LOAD_STATE_FILE]);
+            if (yesno_dialog(dialog_msg) == 0)
+            {
+                /* Auto-save current progress before loading */
+                action_savestate_slot(10);
+                if (load_state_silent(filename_buffer) != 0)
+                {
+                    return_value = 1;
+                    repeat = 0;
+                }
+            }
+            else
+            {
+                /* Cancelled — reopen file browser */
+                file_browser_repeat = 1;
+            }
+        }
+        else
+        {
+            /* Scenario 1 or 2: Different ROM or no ROM running */
+            char display_name[36];
+            if (strlen(rom_name) > 30)
+            {
+                strncpy(display_name, rom_name, 27);
+                display_name[27] = '\0';
+                strcat(display_name, "...");
+            }
+            else
+            {
+                strcpy(display_name, rom_name);
+            }
+            snprintf(dialog_msg, sizeof(dialog_msg),
+                     MSG[MSG_LOAD_ROM_AND_STATE], display_name);
+            if (yesno_dialog(dialog_msg) == 0)
+            {
+                /* Auto-save current ROM if one is running */
+                if (!first_load)
+                {
+                    save_game_config_file();
+                    update_backup_immediately();
+                    action_savestate_slot(10);
+                }
+
+                /* Try to find and load the ROM file */
+                {
+                    const char *rom_exts[] = { ".gba", ".zip", ".bin", ".agb", ".gbz", NULL };
+                    u32 rom_found = 0;
+                    u32 ext_i;
+                    char rom_file[MAX_FILE];
+
+                    for (ext_i = 0; rom_exts[ext_i] != NULL; ext_i++)
+                    {
+                        /* Check existence with full path */
+                        snprintf(rom_path, sizeof(rom_path), "%s%s%s",
+                                 dir_roms, rom_name, rom_exts[ext_i]);
+                        SceIoStat stat;
+                        if (sceIoGetstat(rom_path, &stat) >= 0)
+                        {
+                            rom_found = 1;
+                            /* load_gamepak() expects bare filename, not full path */
+                            snprintf(rom_file, sizeof(rom_file), "%s%s",
+                                     rom_name, rom_exts[ext_i]);
+                            break;
+                        }
+                    }
+
+                    if (!rom_found)
+                    {
+                        error_msg(MSG[MSG_ERR_ROM_NOT_FOUND], CONFIRMATION_CONT);
+                        /* Reopen file browser after error */
+                        file_browser_repeat = 1;
+                        continue;
+                    }
+
+                    /* load_file(dir_state) changed CWD to savestate dir;
+                       load_gamepak() needs CWD to be the ROM directory */
+                    chdir(dir_roms);
+
+                    if (load_gamepak(rom_file) < 0)
+                    {
+                        clear_screen(COLOR32_BLACK);
+                        error_msg(MSG[MSG_ERR_LOAD_GAMEPACK], CONFIRMATION_CONT);
+                        gamepak_file_none();
+                        /* Reopen file browser after error */
+                        file_browser_repeat = 1;
+                        continue;
+                    }
+
+                    reset_gba();
+                    reg[CHANGED_PC_STATUS] = 1;
+                }
+
+                /* Load the selected savestate */
+                savestate_slot = slot_parsed;
+                if (load_state_silent(filename_buffer) != 0)
+                {
+                    return_value = 1;
+                    repeat = 0;
+                }
+            }
+            else
+            {
+                /* Cancelled — reopen file browser */
+                file_browser_repeat = 1;
+            }
+        }
       }
-    }
-    else
-    {
-      menu_init();
-      choose_menu(current_menu);
-      counter = 0;
+      else
+      {
+        /* User cancelled file browser — return to savestate menu */
+        menu_init();
+        choose_menu(current_menu);
+        counter = 0;
+      }
     }
   }
 
@@ -2151,7 +2334,7 @@ u32 menu(void)
     char savestate_path[MAX_PATH];
     char confirm_msg[80];
 
-    if (first_load || current_option_num >= 10)
+    if (first_load || current_option_num >= 11)
       return;
 
     get_savestate_filename(savestate_slot, savestate_filename);
@@ -2165,9 +2348,13 @@ u32 menu(void)
       sceIoRemove(savestate_path);
 
       /* Refresh timestamp to empty */
-      snprintf(savestate_timestamps[savestate_slot], 40, "%d: %s",
-               (int)savestate_slot,
-               MSG[(date_format == 0) ? MSG_STATE_MENU_DATE_NONE_0 : MSG_STATE_MENU_DATE_NONE_1]);
+      if (savestate_slot == 10)
+        sprintf(savestate_timestamps[savestate_slot], "AUTO: %s",
+                MSG[(date_format == 0) ? MSG_STATE_MENU_DATE_NONE_0 : MSG_STATE_MENU_DATE_NONE_1]);
+      else
+        snprintf(savestate_timestamps[savestate_slot], 40, "%d: %s",
+                 (int)savestate_slot,
+                 MSG[(date_format == 0) ? MSG_STATE_MENU_DATE_NONE_0 : MSG_STATE_MENU_DATE_NONE_1]);
 
       /* Refresh screenshot to blank */
       memset(savestate_screen, 0, GBA_SCREEN_SIZE);
@@ -2485,7 +2672,7 @@ u32 menu(void)
       if (i == 10)
         sprintf(savestate_timestamps[i], "AUTO: %s", line_buffer);
       else
-        sprintf(savestate_timestamps[i], "%d: %s", i, line_buffer);
+        sprintf(savestate_timestamps[i], "%d: %s", (int)i, line_buffer);
     }
   }
 
@@ -3019,7 +3206,7 @@ u32 menu(void)
 
 
     /* Triangle: delete savestate when in savestate menu */
-    if (current_menu == &savestate_menu && !first_load && current_option_num < 10)
+    if (current_menu == &savestate_menu && !first_load && current_option_num < 11)
     {
       if (get_pad_input(PSP_CTRL_TRIANGLE) != 0)
       {
@@ -3185,12 +3372,22 @@ u32 menu(void)
               {
                 switch (current_option->line_number)
                 {
-                  case 11: // Load State File
+                  case 12: // Load State File
                     menu_load_state_file();
                     break;
                   default:
                     if (current_option->line_number < 11)
                     {
+                      if (savestate_action == 0 && current_option->line_number < 10)
+                      {
+                        if (savestate_file_exists(current_option->line_number))
+                        {
+                          action_savestate_slot(10);
+                          get_savestate_filename(10, filename_buffer);
+                          get_savestate_info(filename_buffer, NULL, line_buffer);
+                          sprintf(savestate_timestamps[10], "AUTO: %s", line_buffer);
+                        }
+                      }
                       if ((savestate_action != 0 ? menu_save_state() : menu_load_state()) != 0)
                       {
                         return_value = 1;
