@@ -514,6 +514,132 @@ void print_swap_aware(const char *src, u32 x, u32 y, u16 color, u16 bg)
         print_string_gbk(buf, x, y, color, bg);
 }
 
+/* ------------------------------------------------------------------
+   Scrolling text helpers — ping-pong character-stepped
+   ------------------------------------------------------------------ */
+#define SCROLL_SPEED_FRAME  2
+#define SCROLL_EDGE_PAUSE   60
+
+#define SCROLL_MENU_MAX_CHARS   ((SCREEN_IMAGE_POS_X - MENU_LIST_POS_X) / FONTWIDTH)
+#define SCROLL_TITLE_MAX_CHARS  ((PSP_SCREEN_WIDTH - 228) / FONTWIDTH)
+#define SCROLL_FILE_MAX_CHARS   ((DIR_LIST_POS_X - FILE_LIST_POS_X) / FONTWIDTH)
+#define SCROLL_DIR_MAX_CHARS    ((PSP_SCREEN_WIDTH - DIR_LIST_POS_X) / FONTWIDTH)
+
+typedef struct {
+    u32 menu_tick;
+    u32 last_menu_hash;
+    u32 file_tick;
+    u32 last_file_hash;
+    u32 title_tick;
+    u32 last_title_hash;
+} ScrollState;
+
+static ScrollState g_scroll = {0, ~0U, 0, ~0U, 0, ~0U};
+
+static u32 hash_string(const char *s)
+{
+    u32 h = 0;
+    while (*s) {
+        h = h * 31 + (u8)*s++;
+    }
+    return h;
+}
+
+static s32 compute_scroll_offset(u32 tick, u32 str_len, u32 max_chars)
+{
+    if (str_len <= max_chars)
+        return 0;
+
+    u32 scroll_len = str_len - max_chars;
+    u32 half_cycle = SCROLL_EDGE_PAUSE + (scroll_len * SCROLL_SPEED_FRAME);
+    u32 full_cycle = half_cycle * 2;
+    u32 t = tick % full_cycle;
+
+    if (t < SCROLL_EDGE_PAUSE)
+        return 0;
+    t -= SCROLL_EDGE_PAUSE;
+    if (t < scroll_len * SCROLL_SPEED_FRAME)
+        return (s32)(t / SCROLL_SPEED_FRAME);
+    t -= scroll_len * SCROLL_SPEED_FRAME;
+    if (t < SCROLL_EDGE_PAUSE)
+        return (s32)scroll_len;
+    t -= SCROLL_EDGE_PAUSE;
+    return (s32)(scroll_len - (t / SCROLL_SPEED_FRAME));
+}
+
+static void update_menu_scroll(u32 hash)
+{
+    if (hash != g_scroll.last_menu_hash) {
+        g_scroll.last_menu_hash = hash;
+        g_scroll.menu_tick = 0;
+    } else {
+        g_scroll.menu_tick++;
+    }
+}
+
+static void update_file_scroll(u32 hash)
+{
+    if (hash != g_scroll.last_file_hash) {
+        g_scroll.last_file_hash = hash;
+        g_scroll.file_tick = 0;
+    } else {
+        g_scroll.file_tick++;
+    }
+}
+
+static void update_title_scroll(u32 hash)
+{
+    if (hash != g_scroll.last_title_hash) {
+        g_scroll.last_title_hash = hash;
+        g_scroll.title_tick = 0;
+    } else {
+        g_scroll.title_tick++;
+    }
+}
+
+static void print_string_scroll(const char *str, u32 x, u32 y, u16 color, u16 bg, u32 max_chars, s32 scroll_offset)
+{
+    u32 len = strlen(str);
+    if (len == 0) return;
+
+    if (len <= max_chars) {
+        print_string(str, x, y, color, bg);
+        return;
+    }
+
+    u32 start = (u32)scroll_offset;
+    if (start >= len) start = len - 1;
+    u32 clip_len = len - start;
+    if (clip_len > max_chars) clip_len = max_chars;
+    if (clip_len >= 256) clip_len = 255;
+
+    char buf[256];
+    memcpy(buf, str + start, clip_len);
+    buf[clip_len] = '\0';
+
+    print_string(buf, x, y, color, bg);
+}
+
+/* Clip any string to max_chars width — used for non-selected items */
+static void print_string_clipped(const char *str, u32 x, u32 y, u16 color, u16 bg, u32 max_chars)
+{
+    u32 len = strlen(str);
+    if (len == 0) return;
+
+    if (len <= max_chars) {
+        print_string(str, x, y, color, bg);
+        return;
+    }
+
+    if (max_chars >= 256) max_chars = 255;
+
+    char buf[256];
+    memcpy(buf, str, max_chars);
+    buf[max_chars] = '\0';
+
+    print_string(buf, x, y, color, bg);
+}
+
 static void draw_color_picker(u32 h, u32 s, u32 v, s32 cx, s32 cy, s32 hue_seg,
                               u16 original_color, u16 current_color, u32 title_msg_idx)
 {
@@ -1346,6 +1472,13 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name)
     while (repeat)
     {
       clear_screen(COLOR15_TO_32(color_bg));
+
+      /* Update file browser scroll state */
+      {
+          u32 file_hash = (column << 24) ^ selection[column];
+          update_file_scroll(file_hash);
+      }
+
 		if (option_language == 0)
 			print_string(current_dir_short, 6, 2, color_help_text, BG_NO_FILL);
 		else
@@ -1398,30 +1531,40 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name)
 
         if (current_file_number < num[FILE_LIST])
         {
-          if ((current_file_number == selection[FILE_LIST]) && (column == FILE_LIST))
+          u32 is_selected = ((current_file_number == selection[FILE_LIST]) && (column == FILE_LIST));
+          if (is_selected)
             current_line_color = color_active_item;
           else
             current_line_color = color_inactive_item;
 
-          print_string(file_list[current_file_number], FILE_LIST_POS_X, FILE_LIST_POS_Y + (i * FONTHEIGHT), current_line_color, BG_NO_FILL);
+          if (is_selected) {
+              s32 off = compute_scroll_offset(g_scroll.file_tick, strlen(file_list[current_file_number]), SCROLL_FILE_MAX_CHARS);
+              print_string_scroll(file_list[current_file_number], FILE_LIST_POS_X, FILE_LIST_POS_Y + (i * FONTHEIGHT), current_line_color, BG_NO_FILL, SCROLL_FILE_MAX_CHARS, off);
+          } else {
+              print_string_clipped(file_list[current_file_number], FILE_LIST_POS_X, FILE_LIST_POS_Y + (i * FONTHEIGHT), current_line_color, BG_NO_FILL, SCROLL_FILE_MAX_CHARS);
+          }
         }
       }
-
       for (i = 0; i < FILE_LIST_ROWS; i++)
       {
         current_dir_number = i + scroll_value[DIR_LIST];
 
         if (current_dir_number < num[DIR_LIST])
         {
-          if ((current_dir_number == selection[DIR_LIST]) && (column == DIR_LIST))
+          u32 is_selected = ((current_dir_number == selection[DIR_LIST]) && (column == DIR_LIST));
+          if (is_selected)
             current_line_color = color_active_item;
           else
             current_line_color = color_inactive_dir;
 
-          print_string(dir_list[current_dir_number], DIR_LIST_POS_X, FILE_LIST_POS_Y + (i * FONTHEIGHT), current_line_color, color_bg);
+          if (is_selected) {
+              s32 off = compute_scroll_offset(g_scroll.file_tick, strlen(dir_list[current_dir_number]), SCROLL_DIR_MAX_CHARS);
+              print_string_scroll(dir_list[current_dir_number], DIR_LIST_POS_X, FILE_LIST_POS_Y + (i * FONTHEIGHT), current_line_color, color_bg, SCROLL_DIR_MAX_CHARS, off);
+          } else {
+              print_string_clipped(dir_list[current_dir_number], DIR_LIST_POS_X, FILE_LIST_POS_Y + (i * FONTHEIGHT), current_line_color, color_bg, SCROLL_DIR_MAX_CHARS);
+          }
         }
       }
-
       if (num[DIR_LIST] > FILE_LIST_ROWS)
       {
         if (scroll_value[DIR_LIST] != 0)
@@ -1826,6 +1969,58 @@ static void print_menu_line(const char *str, s16 x, s16 y, u16 fg, s16 bg)
         print_string_gbk(str, x, y, fg, bg);
 }
 
+static void print_menu_line_scroll(const char *str, s16 x, s16 y, u16 fg, s16 bg, u32 max_chars, s32 scroll_offset)
+{
+    if (menu_string_has_gbk(str)) {
+        print_menu_line(str, x, y, fg, bg);
+        return;
+    }
+
+    u32 len = strlen(str);
+    if (len == 0) return;
+
+    if (len <= max_chars) {
+        print_menu_line(str, x, y, fg, bg);
+        return;
+    }
+
+    u32 start = (u32)scroll_offset;
+    if (start >= len) start = len - 1;
+    u32 clip_len = len - start;
+    if (clip_len > max_chars) clip_len = max_chars;
+    if (clip_len >= 256) clip_len = 255;
+
+    char buf[256];
+    memcpy(buf, str + start, clip_len);
+    buf[clip_len] = '\0';
+
+    print_menu_line(buf, x, y, fg, bg);
+}
+
+static void print_menu_line_clipped(const char *str, s16 x, s16 y, u16 fg, s16 bg, u32 max_chars)
+{
+    if (menu_string_has_gbk(str)) {
+        print_menu_line(str, x, y, fg, bg);
+        return;
+    }
+
+    u32 len = strlen(str);
+    if (len == 0) return;
+
+    if (len <= max_chars) {
+        print_menu_line(str, x, y, fg, bg);
+        return;
+    }
+
+    if (max_chars >= 256) max_chars = 255;
+
+    char buf[256];
+    memcpy(buf, str, max_chars);
+    buf[max_chars] = '\0';
+
+    print_menu_line(buf, x, y, fg, bg);
+}
+
 static void format_menu_option_line(char *dst, u32 dst_size, const MenuOptionType *opt)
 {
     const char *fmt;
@@ -1876,6 +2071,103 @@ static void format_menu_option_line(char *dst, u32 dst_size, const MenuOptionTyp
 
     strncpy(dst, fmt, dst_size - 1);
     dst[dst_size - 1] = '\0';
+}
+
+/* Print a menu option by splitting the format string at %s or %d.
+   Label is printed fixed. Value is printed with scroll/clip.
+   This avoids format_menu_option_line() which merges them into one string. */
+static void print_menu_option_split(const MenuOptionType *opt, s16 x, s16 y, u16 fg, u16 bg, u32 max_chars, s32 scroll_offset)
+{
+    const char *fmt = opt->display_string;
+    if (fmt == NULL) return;
+
+    /* Check for %s or %d in format string */
+    const char *spec_s = strstr(fmt, "%s");
+    const char *spec_d = strstr(fmt, "%d");
+    const char *spec = NULL;
+    u32 is_numeric = 0;
+
+    if (spec_s != NULL && spec_d != NULL) {
+        /* Both present — use the first one */
+        spec = (spec_s < spec_d) ? spec_s : spec_d;
+        is_numeric = (spec_d < spec_s) ? 1 : 0;
+    } else if (spec_s != NULL) {
+        spec = spec_s;
+        is_numeric = 0;
+    } else if (spec_d != NULL) {
+        spec = spec_d;
+        is_numeric = 1;
+    } else {
+        /* No %s or %d — scroll/clip whole string */
+        if (scroll_offset >= 0) {
+            print_menu_line_scroll(fmt, x, y, fg, bg, max_chars, scroll_offset);
+        } else {
+            print_menu_line_clipped(fmt, x, y, fg, bg, max_chars);
+        }
+        return;
+    }
+
+    /* Print label (before %s or %d) */
+    u32 prefix_len = (u32)(spec - fmt);
+    if (prefix_len >= 256) prefix_len = 255;
+
+    char label_buf[256];
+    memcpy(label_buf, fmt, prefix_len);
+    label_buf[prefix_len] = '\0';
+
+    print_menu_line(label_buf, x, y, fg, bg);
+
+    /* Calculate value position */
+    u32 label_width = prefix_len * FONTWIDTH;
+    s16 value_x = x + (s16)label_width;
+
+    /* Get value string */
+    char value_buf[32];
+    const char *value = "";
+    u32 value_len = 0;
+
+    if (is_numeric) {
+        /* %d — format the numeric value */
+        sprintf(value_buf, "%d", *(opt->current_option));
+        value = value_buf;
+        value_len = strlen(value);
+    } else {
+        /* %s — look up in choice array */
+        const char **choices = (const char **)opt->options;
+        u32 idx = *(opt->current_option);
+        if (choices != NULL && idx < opt->num_options && choices[idx] != NULL) {
+            value = choices[idx];
+            value_len = strlen(value);
+        }
+    }
+
+    u32 value_max = (max_chars > prefix_len) ? (max_chars - prefix_len) : 0;
+    if (value_max == 0) return;
+
+    if (value_len <= value_max) {
+        /* Value fits — print normally */
+        print_menu_line(value, value_x, y, fg, bg);
+    } else if (scroll_offset >= 0) {
+        /* Value scrolls */
+        u32 start = (u32)scroll_offset;
+        if (start >= value_len) start = value_len - 1;
+        u32 clip_len = value_len - start;
+        if (clip_len > value_max) clip_len = value_max;
+        if (clip_len >= 256) clip_len = 255;
+
+        char val_clip[256];
+        memcpy(val_clip, value + start, clip_len);
+        val_clip[clip_len] = '\0';
+        print_menu_line(val_clip, value_x, y, fg, bg);
+    } else {
+        /* Value clipped (not selected) */
+        u32 clip = value_max;
+        if (clip >= 256) clip = 255;
+        char val_clip[256];
+        memcpy(val_clip, value, clip);
+        val_clip[clip] = '\0';
+        print_menu_line(val_clip, value_x, y, fg, bg);
+    }
 }
 
 static void menu_refresh_language(void)
@@ -3108,7 +3400,12 @@ u32 menu(void)
 	else
 	print_string_gbk(batt_str, BATT_STATUS_POS_X, 2, color_batt_life, BG_NO_FILL);
 
-    print_string(game_title, 228, 28, color_inactive_item, BG_NO_FILL);
+    {
+        u32 title_hash = hash_string(game_title);
+        update_title_scroll(title_hash);
+        s32 off = compute_scroll_offset(g_scroll.title_tick, strlen(game_title), SCROLL_TITLE_MAX_CHARS);
+        print_string_scroll(game_title, 228, 28, color_inactive_item, BG_NO_FILL, SCROLL_TITLE_MAX_CHARS, off);
+    }
 
     /* In Theme or Custom Colors menus, show live theme preview instead of game screenshot */
     if (current_menu == &custom_colors_menu || current_menu == &theme_menu)
@@ -3157,17 +3454,48 @@ u32 menu(void)
     if (current_menu && current_menu->options)
     {
       display_option = current_menu->options;
+      u32 menu_hash = ((u32)current_menu) ^ current_option_num;
+      update_menu_scroll(menu_hash);
 
       for (i = 0; i < current_menu->num_options; i++, display_option++)
       {
-        format_menu_option_line(line_buffer, sizeof(line_buffer), display_option);
-        print_menu_line(line_buffer, MENU_LIST_POS_X,
-                        (display_option->line_number * FONTHEIGHT) + 28,
-                        (display_option == current_option) ? color_active_item : color_inactive_item,
-                        BG_NO_FILL);
+        if (display_option == current_option) {
+            /* Compute scroll offset based on VALUE length, not label+value */
+            const char *fmt = display_option->display_string;
+            const char *spec_s = (fmt != NULL) ? strstr(fmt, "%s") : NULL;
+            const char *spec_d = (fmt != NULL) ? strstr(fmt, "%d") : NULL;
+            u32 value_len = 0;
+            u32 label_chars = 0;
+
+            if (spec_s != NULL) {
+                /* String option — look up choice */
+                label_chars = (u32)(spec_s - fmt);
+                const char **choices = (const char **)display_option->options;
+                u32 idx = *(display_option->current_option);
+                if (choices != NULL && idx < display_option->num_options && choices[idx] != NULL)
+                    value_len = strlen(choices[idx]);
+            } else if (spec_d != NULL) {
+                /* Numeric option — format the number */
+                label_chars = (u32)(spec_d - fmt);
+                char num_buf[16];
+                sprintf(num_buf, "%d", *(display_option->current_option));
+                value_len = strlen(num_buf);
+            } else {
+                /* No format spec — use full string */
+                value_len = (fmt != NULL) ? strlen(fmt) : 0;
+            }
+
+            u32 value_max = (SCROLL_MENU_MAX_CHARS > label_chars) ? (SCROLL_MENU_MAX_CHARS - label_chars) : 0;
+            s32 off = compute_scroll_offset(g_scroll.menu_tick, value_len, value_max);
+            print_menu_option_split(display_option, MENU_LIST_POS_X,
+                            (display_option->line_number * FONTHEIGHT) + 28,
+                            color_active_item, BG_NO_FILL, SCROLL_MENU_MAX_CHARS, off);
+        } else {            print_menu_option_split(display_option, MENU_LIST_POS_X,
+                            (display_option->line_number * FONTHEIGHT) + 28,
+                            color_inactive_item, BG_NO_FILL, SCROLL_MENU_MAX_CHARS, -1);
+        }
       }
     }
-
   // --- Tooltip (drawn above bottom button hints) ---
   if (current_option->tooltip_string != 0)
   {
