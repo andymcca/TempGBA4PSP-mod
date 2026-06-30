@@ -3496,6 +3496,7 @@ u32 menu(void)
         }
       }
     }
+
   // --- Tooltip (drawn above bottom button hints) ---
   if (current_option->tooltip_string != 0)
   {
