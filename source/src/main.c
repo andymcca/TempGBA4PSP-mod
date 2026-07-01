@@ -1079,6 +1079,10 @@ void error_msg(const char *text, u8 confirm)
 {
   char text_buff[512];
   GUI_ACTION_TYPE gui_action = CURSOR_NONE;
+  const int popup_w = 440;
+  const int popup_h = 120;
+  const int popup_x = (PSP_SCREEN_WIDTH - popup_w) / 2;
+  const int popup_y = (PSP_SCREEN_HEIGHT - popup_h) / 2;
 
   switch (confirm)
   {
@@ -1094,7 +1098,9 @@ void error_msg(const char *text, u8 confirm)
       sprintf(text_buff, "%s\n\n%s", text, MSG[MSG_ERR_QUIT]);
       break;
   }
-  print_swap_aware(text_buff, 6, 6, COLOR15_WHITE, COLOR15_BLACK);
+
+  draw_popup_frame_auto(popup_x, popup_y, popup_w, popup_h);
+  print_swap_aware(text_buff, popup_x + 12, popup_y + 12, color_active_item, BG_NO_FILL);
   flip_screen(1);
 
   while (gui_action == CURSOR_NONE)
@@ -1106,23 +1112,22 @@ void error_msg(const char *text, u8 confirm)
 u32 yesno_dialog(const char *text)
 {
   GUI_ACTION_TYPE gui_action = CURSOR_NONE;
-  const u16 dlg_x1 = 72;
-  const u16 dlg_y1 = 96;
-  const u16 dlg_x2 = 407;
-  const u16 dlg_y2 = 176;
+  const int popup_w = 336;
+  const int popup_h = 80;
+  const int popup_x = (PSP_SCREEN_WIDTH - popup_w) / 2;
+  const int popup_y = (PSP_SCREEN_HEIGHT - popup_h) / 2;
 
-  draw_box_fill(dlg_x1, dlg_y1, dlg_x2, dlg_y2, color_bg);
-  draw_box_line(dlg_x1 + 10, dlg_y1 + 10, dlg_x2 - 10, dlg_y2 - 10, color_inactive_item);
+  draw_popup_frame_auto(popup_x, popup_y, popup_w, popup_h);
 
   if (option_language == 0)
   {
-    print_string(text, X_POS_CENTER, dlg_y1 + 20, color_active_item, color_bg);
+    print_string(text, X_POS_CENTER, popup_y + 16, color_active_item, BG_NO_FILL);
   }
   else
   {
-    print_string_gbk(text, X_POS_CENTER, dlg_y1 + 20, color_active_item, color_bg);
+    print_string_gbk(text, X_POS_CENTER, popup_y + 16, color_active_item, BG_NO_FILL);
   }
-  print_swap_aware(MSG[MSG_YES_NO], X_POS_CENTER, dlg_y1 + 50, color_active_item, color_bg);
+  print_swap_aware(MSG[MSG_YES_NO], X_POS_CENTER, popup_y + 46, color_active_item, BG_NO_FILL);
 
   flip_screen(1);
 
