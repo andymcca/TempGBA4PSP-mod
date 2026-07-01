@@ -361,6 +361,164 @@ static u16 hsv_to_color15(u32 h, u32 s, u32 v)
     return rgb_to_color15(C8TO5(r), C8TO5(g), C8TO5(b));
 }
 
+/* ------------------------------------------------------------------
+   Recent ROMs management
+   ------------------------------------------------------------------ */
+
+#define MAX_RECENT_ROMS     5
+#define RECENT_CFG_FILENAME "recent.cfg"
+
+typedef struct {
+    char path[MAX_PATH];
+} RecentRomEntry;
+
+static RecentRomEntry recent_roms[MAX_RECENT_ROMS];
+static u32 num_recent_roms = 0;
+
+/* Forward declarations */
+void load_recent_roms(void);
+static void save_recent_roms(void);
+void add_recent_rom(const char *filename);
+static void validate_recent_roms(void);
+static u32 is_recent_roms_empty(void);
+
+void load_recent_roms(void)
+{
+    SceUID fd;
+    char path[MAX_PATH];
+    u32 i;
+
+    num_recent_roms = 0;
+    memset(recent_roms, 0, sizeof(recent_roms));
+
+    sprintf(path, "%s%s", main_path, RECENT_CFG_FILENAME);
+
+    FILE_OPEN(fd, path, READ);
+    if (FILE_CHECK_VALID(fd))
+    {
+        u32 count = 0;
+        if (FILE_READ(fd, &count, sizeof(count)) == sizeof(count))
+        {
+            if (count > MAX_RECENT_ROMS)
+                count = MAX_RECENT_ROMS;
+
+            for (i = 0; i < count; i++)
+            {
+                u32 len = 0;
+                if (FILE_READ(fd, &len, sizeof(len)) != sizeof(len))
+                    break;
+                if (len >= MAX_PATH)
+                    break;
+                if (FILE_READ(fd, recent_roms[i].path, len) != (s32)len)
+                    break;
+                recent_roms[i].path[len] = '\0';
+                num_recent_roms++;
+            }
+        }
+        FILE_CLOSE(fd);
+    }
+
+    /* Validate: remove entries pointing to deleted ROMs */
+    validate_recent_roms();
+}
+
+static void save_recent_roms(void)
+{
+    SceUID fd;
+    char path[MAX_PATH];
+    u32 i;
+
+    sprintf(path, "%s%s", main_path, RECENT_CFG_FILENAME);
+
+    scePowerLock(0);
+    FILE_OPEN(fd, path, WRITE);
+    if (FILE_CHECK_VALID(fd))
+    {
+        FILE_WRITE(fd, &num_recent_roms, sizeof(num_recent_roms));
+        for (i = 0; i < num_recent_roms; i++)
+        {
+            u32 len = strlen(recent_roms[i].path);
+            FILE_WRITE(fd, &len, sizeof(len));
+            FILE_WRITE(fd, recent_roms[i].path, len);
+        }
+        FILE_CLOSE(fd);
+    }
+    scePowerUnlock(0);
+}
+
+static void validate_recent_roms(void)
+{
+    u32 i, j;
+    SceIoStat stat;
+
+    for (i = 0; i < num_recent_roms; )
+    {
+        /* Check if file still exists */
+        if (sceIoGetstat(recent_roms[i].path, &stat) < 0 || !FIO_S_ISREG(stat.st_mode))
+        {
+            /* Remove this entry by shifting remaining entries down */
+            for (j = i; j < num_recent_roms - 1; j++)
+            {
+                strcpy(recent_roms[j].path, recent_roms[j + 1].path);
+            }
+            num_recent_roms--;
+            /* Don't increment i, check the new entry at this position */
+        }
+        else
+        {
+            i++;
+        }
+    }
+}
+
+static u32 is_recent_roms_empty(void)
+{
+    return (num_recent_roms == 0);
+}
+
+void add_recent_rom(const char *filename)
+{
+    u32 i;
+    char full_path[MAX_PATH];
+    char current_dir[MAX_PATH];
+
+    /* Build full path */
+    getcwd(current_dir, MAX_PATH);
+    if (filename[0] == '/')
+        snprintf(full_path, sizeof(full_path), "%s", filename);
+    else
+        snprintf(full_path, sizeof(full_path), "%s/%s", current_dir, filename);
+
+    /* Check if already in list — if so, remove old entry */
+    for (i = 0; i < num_recent_roms; i++)
+    {
+        if (strcasecmp(recent_roms[i].path, full_path) == 0)
+        {
+            /* Shift entries down to remove this one */
+            for (; i < num_recent_roms - 1; i++)
+            {
+                strcpy(recent_roms[i].path, recent_roms[i + 1].path);
+            }
+            num_recent_roms--;
+            break;
+        }
+    }
+
+    /* Shift all entries down by one to make room at top */
+    for (i = (num_recent_roms < MAX_RECENT_ROMS ? num_recent_roms : MAX_RECENT_ROMS - 1); i > 0; i--)
+    {
+        strcpy(recent_roms[i].path, recent_roms[i - 1].path);
+    }
+
+    /* Add new entry at top */
+    strcpy(recent_roms[0].path, full_path);
+    if (num_recent_roms < MAX_RECENT_ROMS)
+        num_recent_roms++;
+
+    save_recent_roms();
+}
+
+
 /* Forward declarations for status bar functions */
 static void update_status_string(char *time_str, char *batt_str, u16 *color_batt);
 static void update_status_string_gbk(char *time_str, char *batt_str, u16 *color_batt);
@@ -512,6 +670,132 @@ void print_swap_aware(const char *src, u32 x, u32 y, u16 color, u16 bg)
         print_string(buf, x, y, color, bg);
     else
         print_string_gbk(buf, x, y, color, bg);
+}
+
+/* ------------------------------------------------------------------
+   Scrolling text helpers — ping-pong character-stepped
+   ------------------------------------------------------------------ */
+#define SCROLL_SPEED_FRAME  2
+#define SCROLL_EDGE_PAUSE   60
+
+#define SCROLL_MENU_MAX_CHARS   ((SCREEN_IMAGE_POS_X - MENU_LIST_POS_X) / FONTWIDTH)
+#define SCROLL_TITLE_MAX_CHARS  ((PSP_SCREEN_WIDTH - 228) / FONTWIDTH)
+#define SCROLL_FILE_MAX_CHARS   ((DIR_LIST_POS_X - FILE_LIST_POS_X) / FONTWIDTH)
+#define SCROLL_DIR_MAX_CHARS    ((PSP_SCREEN_WIDTH - DIR_LIST_POS_X) / FONTWIDTH)
+
+typedef struct {
+    u32 menu_tick;
+    u32 last_menu_hash;
+    u32 file_tick;
+    u32 last_file_hash;
+    u32 title_tick;
+    u32 last_title_hash;
+} ScrollState;
+
+static ScrollState g_scroll = {0, ~0U, 0, ~0U, 0, ~0U};
+
+static u32 hash_string(const char *s)
+{
+    u32 h = 0;
+    while (*s) {
+        h = h * 31 + (u8)*s++;
+    }
+    return h;
+}
+
+static s32 compute_scroll_offset(u32 tick, u32 str_len, u32 max_chars)
+{
+    if (str_len <= max_chars)
+        return 0;
+
+    u32 scroll_len = str_len - max_chars;
+    u32 half_cycle = SCROLL_EDGE_PAUSE + (scroll_len * SCROLL_SPEED_FRAME);
+    u32 full_cycle = half_cycle * 2;
+    u32 t = tick % full_cycle;
+
+    if (t < SCROLL_EDGE_PAUSE)
+        return 0;
+    t -= SCROLL_EDGE_PAUSE;
+    if (t < scroll_len * SCROLL_SPEED_FRAME)
+        return (s32)(t / SCROLL_SPEED_FRAME);
+    t -= scroll_len * SCROLL_SPEED_FRAME;
+    if (t < SCROLL_EDGE_PAUSE)
+        return (s32)scroll_len;
+    t -= SCROLL_EDGE_PAUSE;
+    return (s32)(scroll_len - (t / SCROLL_SPEED_FRAME));
+}
+
+static void update_menu_scroll(u32 hash)
+{
+    if (hash != g_scroll.last_menu_hash) {
+        g_scroll.last_menu_hash = hash;
+        g_scroll.menu_tick = 0;
+    } else {
+        g_scroll.menu_tick++;
+    }
+}
+
+static void update_file_scroll(u32 hash)
+{
+    if (hash != g_scroll.last_file_hash) {
+        g_scroll.last_file_hash = hash;
+        g_scroll.file_tick = 0;
+    } else {
+        g_scroll.file_tick++;
+    }
+}
+
+static void update_title_scroll(u32 hash)
+{
+    if (hash != g_scroll.last_title_hash) {
+        g_scroll.last_title_hash = hash;
+        g_scroll.title_tick = 0;
+    } else {
+        g_scroll.title_tick++;
+    }
+}
+
+static void print_string_scroll(const char *str, u32 x, u32 y, u16 color, u16 bg, u32 max_chars, s32 scroll_offset)
+{
+    u32 len = strlen(str);
+    if (len == 0) return;
+
+    if (len <= max_chars) {
+        print_string(str, x, y, color, bg);
+        return;
+    }
+
+    u32 start = (u32)scroll_offset;
+    if (start >= len) start = len - 1;
+    u32 clip_len = len - start;
+    if (clip_len > max_chars) clip_len = max_chars;
+    if (clip_len >= 256) clip_len = 255;
+
+    char buf[256];
+    memcpy(buf, str + start, clip_len);
+    buf[clip_len] = '\0';
+
+    print_string(buf, x, y, color, bg);
+}
+
+/* Clip any string to max_chars width — used for non-selected items */
+static void print_string_clipped(const char *str, u32 x, u32 y, u16 color, u16 bg, u32 max_chars)
+{
+    u32 len = strlen(str);
+    if (len == 0) return;
+
+    if (len <= max_chars) {
+        print_string(str, x, y, color, bg);
+        return;
+    }
+
+    if (max_chars >= 256) max_chars = 255;
+
+    char buf[256];
+    memcpy(buf, str, max_chars);
+    buf[max_chars] = '\0';
+
+    print_string(buf, x, y, color, bg);
 }
 
 static void draw_color_picker(u32 h, u32 s, u32 v, s32 cx, s32 cy, s32 hue_seg,
@@ -1175,6 +1459,11 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name)
   s32 return_value = 1;
   s32 repeat;
 
+  /* Recent ROMs browser state */
+  u32 in_recent_section = 0;
+  u32 recent_selection = 0;
+  u32 file_list_y_offset = 0;
+
   GUI_ACTION_TYPE gui_action;
 
   char time_str[40];
@@ -1221,6 +1510,9 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name)
   {
     chdir(default_dir_name);
   }
+
+  /* Load recent ROMs list and validate entries */
+  load_recent_roms();
 
   /* File browser is not the main menu; disable OS exit dialog here */
   sceImposeSetHomePopup(0);
@@ -1346,6 +1638,13 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name)
     while (repeat)
     {
       clear_screen(COLOR15_TO_32(color_bg));
+
+      /* Update file browser scroll state */
+      {
+          u32 file_hash = (column << 24) ^ selection[column];
+          update_file_scroll(file_hash);
+      }
+
 		if (option_language == 0)
 			print_string(current_dir_short, 6, 2, color_help_text, BG_NO_FILL);
 		else
@@ -1392,36 +1691,94 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name)
         draw_box_fill(SBAR_X1I, SBAR_Y1I, SBAR_X2I, SBAR_Y2I, color_scroll_bar);
       }
 
+      /* --- Recent Games Section --- */
+      file_list_y_offset = 0;
+      if (!is_recent_roms_empty())
+      {
+        u32 recent_y = FILE_LIST_POS_Y;
+        u16 header_color = color_help_text;
+
+        /* Header */
+        if (option_language == 0)
+          print_string("--- Recent Games ---", FILE_LIST_POS_X, recent_y, header_color, BG_NO_FILL);
+        else
+          print_string_gbk("--- Recent Games ---", FILE_LIST_POS_X, recent_y, header_color, BG_NO_FILL);
+        recent_y += FONTHEIGHT;
+
+        /* Recent ROM entries */
+        for (i = 0; i < num_recent_roms; i++)
+        {
+          const char *rom_name = strrchr(recent_roms[i].path, '/');
+          if (rom_name == NULL)
+            rom_name = recent_roms[i].path;
+          else
+            rom_name++;
+
+          u16 line_color;
+          if (in_recent_section && i == recent_selection)
+          {
+            line_color = color_active_item;
+            s32 off = compute_scroll_offset(g_scroll.file_tick, strlen(rom_name), SCROLL_FILE_MAX_CHARS);
+            print_string_scroll(rom_name, FILE_LIST_POS_X, recent_y, line_color, BG_NO_FILL, SCROLL_FILE_MAX_CHARS, off);
+          }
+          else
+          {
+            line_color = color_inactive_item;
+            print_string_clipped(rom_name, FILE_LIST_POS_X, recent_y, line_color, BG_NO_FILL, SCROLL_FILE_MAX_CHARS);
+          }
+          recent_y += FONTHEIGHT;
+        }
+
+        /* Separator */
+        if (option_language == 0)
+          print_string("--- All Games ---", FILE_LIST_POS_X, recent_y, header_color, BG_NO_FILL);
+        else
+          print_string_gbk("--- All Games ---", FILE_LIST_POS_X, recent_y, header_color, BG_NO_FILL);
+
+        file_list_y_offset = (num_recent_roms + 2) * FONTHEIGHT;
+      }
+
+      /* --- Normal File List --- */
       for (i = 0; i < FILE_LIST_ROWS; i++)
       {
         current_file_number = i + scroll_value[FILE_LIST];
 
         if (current_file_number < num[FILE_LIST])
         {
-          if ((current_file_number == selection[FILE_LIST]) && (column == FILE_LIST))
+          u32 is_selected = ((current_file_number == selection[FILE_LIST]) && (column == FILE_LIST) && !in_recent_section);
+          if (is_selected)
             current_line_color = color_active_item;
           else
             current_line_color = color_inactive_item;
 
-          print_string(file_list[current_file_number], FILE_LIST_POS_X, FILE_LIST_POS_Y + (i * FONTHEIGHT), current_line_color, BG_NO_FILL);
+          if (is_selected) {
+              s32 off = compute_scroll_offset(g_scroll.file_tick, strlen(file_list[current_file_number]), SCROLL_FILE_MAX_CHARS);
+              print_string_scroll(file_list[current_file_number], FILE_LIST_POS_X, FILE_LIST_POS_Y + file_list_y_offset + (i * FONTHEIGHT), current_line_color, BG_NO_FILL, SCROLL_FILE_MAX_CHARS, off);
+          } else {
+              print_string_clipped(file_list[current_file_number], FILE_LIST_POS_X, FILE_LIST_POS_Y + file_list_y_offset + (i * FONTHEIGHT), current_line_color, BG_NO_FILL, SCROLL_FILE_MAX_CHARS);
+          }
         }
       }
-
       for (i = 0; i < FILE_LIST_ROWS; i++)
       {
         current_dir_number = i + scroll_value[DIR_LIST];
 
         if (current_dir_number < num[DIR_LIST])
         {
-          if ((current_dir_number == selection[DIR_LIST]) && (column == DIR_LIST))
+          u32 is_selected = ((current_dir_number == selection[DIR_LIST]) && (column == DIR_LIST));
+          if (is_selected)
             current_line_color = color_active_item;
           else
             current_line_color = color_inactive_dir;
 
-          print_string(dir_list[current_dir_number], DIR_LIST_POS_X, FILE_LIST_POS_Y + (i * FONTHEIGHT), current_line_color, color_bg);
+          if (is_selected) {
+              s32 off = compute_scroll_offset(g_scroll.file_tick, strlen(dir_list[current_dir_number]), SCROLL_DIR_MAX_CHARS);
+              print_string_scroll(dir_list[current_dir_number], DIR_LIST_POS_X, FILE_LIST_POS_Y + (i * FONTHEIGHT), current_line_color, color_bg, SCROLL_DIR_MAX_CHARS, off);
+          } else {
+              print_string_clipped(dir_list[current_dir_number], DIR_LIST_POS_X, FILE_LIST_POS_Y + (i * FONTHEIGHT), current_line_color, color_bg, SCROLL_DIR_MAX_CHARS);
+          }
         }
       }
-
       if (num[DIR_LIST] > FILE_LIST_ROWS)
       {
         if (scroll_value[DIR_LIST] != 0)
@@ -1440,14 +1797,45 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name)
       switch (gui_action)
       {
         case CURSOR_DOWN:
-          if (selection[column] < (num[column] - 1))
+          if (in_recent_section)
           {
-            selection[column]++;
-
-            if (in_scroll[column] == (FILE_LIST_ROWS - 1))
-              scroll_value[column]++;
+            if (recent_selection < num_recent_roms - 1)
+            {
+              recent_selection++;
+            }
             else
-              in_scroll[column]++;
+            {
+              /* Move from recent section to file list */
+              in_recent_section = 0;
+              column = FILE_LIST;
+              selection[FILE_LIST] = 0;
+              scroll_value[FILE_LIST] = 0;
+              in_scroll[FILE_LIST] = 0;
+            }
+          }
+          else if (column == FILE_LIST)
+          {
+            if (selection[FILE_LIST] < (num[FILE_LIST] - 1))
+            {
+              selection[FILE_LIST]++;
+
+              if (in_scroll[FILE_LIST] == (FILE_LIST_ROWS - 1))
+                scroll_value[FILE_LIST]++;
+              else
+                in_scroll[FILE_LIST]++;
+            }
+          }
+          else /* DIR_LIST */
+          {
+            if (selection[column] < (num[column] - 1))
+            {
+              selection[column]++;
+
+              if (in_scroll[column] == (FILE_LIST_ROWS - 1))
+                scroll_value[column]++;
+              else
+                in_scroll[column]++;
+            }
           }
           break;
 
@@ -1500,14 +1888,40 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name)
           break;
 
         case CURSOR_UP:
-          if (selection[column] != 0)
+          if (!in_recent_section && column == FILE_LIST && selection[FILE_LIST] == 0 && !is_recent_roms_empty())
           {
-            selection[column]--;
+            /* Move from file list to recent section */
+            in_recent_section = 1;
+            recent_selection = num_recent_roms - 1;
+          }
+          else if (in_recent_section)
+          {
+            if (recent_selection > 0)
+              recent_selection--;
+          }
+          else if (column == FILE_LIST)
+          {
+            if (selection[FILE_LIST] != 0)
+            {
+              selection[FILE_LIST]--;
 
-            if (in_scroll[column] == 0)
-              scroll_value[column]--;
-            else
-              in_scroll[column]--;
+              if (in_scroll[FILE_LIST] == 0)
+                scroll_value[FILE_LIST]--;
+              else
+                in_scroll[FILE_LIST]--;
+            }
+          }
+          else /* DIR_LIST */
+          {
+            if (selection[column] != 0)
+            {
+              selection[column]--;
+
+              if (in_scroll[column] == 0)
+                scroll_value[column]--;
+              else
+                in_scroll[column]--;
+            }
           }
           break;
 
@@ -1558,7 +1972,29 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name)
           break;
 
         case CURSOR_SELECT:
-          if (column == DIR_LIST)
+          if (in_recent_section)
+          {
+            /* Load selected recent ROM */
+            char *recent_path = recent_roms[recent_selection].path;
+            char *last_slash = strrchr(recent_path, '/');
+
+            if (last_slash != NULL)
+            {
+              size_t dir_len = last_slash - recent_path;
+              char recent_dir[MAX_PATH];
+              memcpy(recent_dir, recent_path, dir_len);
+              recent_dir[dir_len] = '\0';
+              chdir(recent_dir);
+              strcpy(result, last_slash + 1);
+            }
+            else
+            {
+              strcpy(result, recent_path);
+            }
+            repeat = 0;
+            return_value = 0;
+          }
+          else if (column == DIR_LIST)
           {
             repeat = 0;
             chdir(dir_list[selection[DIR_LIST]]);
@@ -1826,6 +2262,58 @@ static void print_menu_line(const char *str, s16 x, s16 y, u16 fg, s16 bg)
         print_string_gbk(str, x, y, fg, bg);
 }
 
+static void print_menu_line_scroll(const char *str, s16 x, s16 y, u16 fg, s16 bg, u32 max_chars, s32 scroll_offset)
+{
+    if (menu_string_has_gbk(str)) {
+        print_menu_line(str, x, y, fg, bg);
+        return;
+    }
+
+    u32 len = strlen(str);
+    if (len == 0) return;
+
+    if (len <= max_chars) {
+        print_menu_line(str, x, y, fg, bg);
+        return;
+    }
+
+    u32 start = (u32)scroll_offset;
+    if (start >= len) start = len - 1;
+    u32 clip_len = len - start;
+    if (clip_len > max_chars) clip_len = max_chars;
+    if (clip_len >= 256) clip_len = 255;
+
+    char buf[256];
+    memcpy(buf, str + start, clip_len);
+    buf[clip_len] = '\0';
+
+    print_menu_line(buf, x, y, fg, bg);
+}
+
+static void print_menu_line_clipped(const char *str, s16 x, s16 y, u16 fg, s16 bg, u32 max_chars)
+{
+    if (menu_string_has_gbk(str)) {
+        print_menu_line(str, x, y, fg, bg);
+        return;
+    }
+
+    u32 len = strlen(str);
+    if (len == 0) return;
+
+    if (len <= max_chars) {
+        print_menu_line(str, x, y, fg, bg);
+        return;
+    }
+
+    if (max_chars >= 256) max_chars = 255;
+
+    char buf[256];
+    memcpy(buf, str, max_chars);
+    buf[max_chars] = '\0';
+
+    print_menu_line(buf, x, y, fg, bg);
+}
+
 static void format_menu_option_line(char *dst, u32 dst_size, const MenuOptionType *opt)
 {
     const char *fmt;
@@ -1876,6 +2364,103 @@ static void format_menu_option_line(char *dst, u32 dst_size, const MenuOptionTyp
 
     strncpy(dst, fmt, dst_size - 1);
     dst[dst_size - 1] = '\0';
+}
+
+/* Print a menu option by splitting the format string at %s or %d.
+   Label is printed fixed. Value is printed with scroll/clip.
+   This avoids format_menu_option_line() which merges them into one string. */
+static void print_menu_option_split(const MenuOptionType *opt, s16 x, s16 y, u16 fg, u16 bg, u32 max_chars, s32 scroll_offset)
+{
+    const char *fmt = opt->display_string;
+    if (fmt == NULL) return;
+
+    /* Check for %s or %d in format string */
+    const char *spec_s = strstr(fmt, "%s");
+    const char *spec_d = strstr(fmt, "%d");
+    const char *spec = NULL;
+    u32 is_numeric = 0;
+
+    if (spec_s != NULL && spec_d != NULL) {
+        /* Both present — use the first one */
+        spec = (spec_s < spec_d) ? spec_s : spec_d;
+        is_numeric = (spec_d < spec_s) ? 1 : 0;
+    } else if (spec_s != NULL) {
+        spec = spec_s;
+        is_numeric = 0;
+    } else if (spec_d != NULL) {
+        spec = spec_d;
+        is_numeric = 1;
+    } else {
+        /* No %s or %d — scroll/clip whole string */
+        if (scroll_offset >= 0) {
+            print_menu_line_scroll(fmt, x, y, fg, bg, max_chars, scroll_offset);
+        } else {
+            print_menu_line_clipped(fmt, x, y, fg, bg, max_chars);
+        }
+        return;
+    }
+
+    /* Print label (before %s or %d) */
+    u32 prefix_len = (u32)(spec - fmt);
+    if (prefix_len >= 256) prefix_len = 255;
+
+    char label_buf[256];
+    memcpy(label_buf, fmt, prefix_len);
+    label_buf[prefix_len] = '\0';
+
+    print_menu_line(label_buf, x, y, fg, bg);
+
+    /* Calculate value position */
+    u32 label_width = prefix_len * FONTWIDTH;
+    s16 value_x = x + (s16)label_width;
+
+    /* Get value string */
+    char value_buf[32];
+    const char *value = "";
+    u32 value_len = 0;
+
+    if (is_numeric) {
+        /* %d — format the numeric value */
+        sprintf(value_buf, "%d", *(opt->current_option));
+        value = value_buf;
+        value_len = strlen(value);
+    } else {
+        /* %s — look up in choice array */
+        const char **choices = (const char **)opt->options;
+        u32 idx = *(opt->current_option);
+        if (choices != NULL && idx < opt->num_options && choices[idx] != NULL) {
+            value = choices[idx];
+            value_len = strlen(value);
+        }
+    }
+
+    u32 value_max = (max_chars > prefix_len) ? (max_chars - prefix_len) : 0;
+    if (value_max == 0) return;
+
+    if (value_len <= value_max) {
+        /* Value fits — print normally */
+        print_menu_line(value, value_x, y, fg, bg);
+    } else if (scroll_offset >= 0) {
+        /* Value scrolls */
+        u32 start = (u32)scroll_offset;
+        if (start >= value_len) start = value_len - 1;
+        u32 clip_len = value_len - start;
+        if (clip_len > value_max) clip_len = value_max;
+        if (clip_len >= 256) clip_len = 255;
+
+        char val_clip[256];
+        memcpy(val_clip, value + start, clip_len);
+        val_clip[clip_len] = '\0';
+        print_menu_line(val_clip, value_x, y, fg, bg);
+    } else {
+        /* Value clipped (not selected) */
+        u32 clip = value_max;
+        if (clip >= 256) clip = 255;
+        char val_clip[256];
+        memcpy(val_clip, value, clip);
+        val_clip[clip] = '\0';
+        print_menu_line(val_clip, value_x, y, fg, bg);
+    }
 }
 
 static void menu_refresh_language(void)
@@ -2063,6 +2648,9 @@ u32 menu(void)
 
       reset_gba();
       reg[CHANGED_PC_STATUS] = 1;
+
+      /* Add to recent ROMs list */
+      add_recent_rom(filename_buffer);
 
       /* Prompt to load auto-savestate for the newly loaded game */
       if (auto_savestate_exists())
@@ -2833,7 +3421,16 @@ u32 menu(void)
             {
               size_t chunk = len - offset;
               if (chunk > max_chars)
+              {
                 chunk = max_chars;
+                /* Word-wrap: find last space within the chunk so we don't
+                   split a hex number (or any token) across lines. */
+                size_t break_at = chunk;
+                while (break_at > 0 && start[offset + break_at - 1] != ' ')
+                  break_at--;
+                if (break_at > 0)
+                  chunk = break_at;
+              }
               if (chunk >= sizeof(line_buf))
                 chunk = sizeof(line_buf) - 1;
 
@@ -3191,7 +3788,12 @@ u32 menu(void)
 	else
 	print_string_gbk(batt_str, BATT_STATUS_POS_X, 2, color_batt_life, BG_NO_FILL);
 
-    print_string(game_title, 228, 28, color_inactive_item, BG_NO_FILL);
+    {
+        u32 title_hash = hash_string(game_title);
+        update_title_scroll(title_hash);
+        s32 off = compute_scroll_offset(g_scroll.title_tick, strlen(game_title), SCROLL_TITLE_MAX_CHARS);
+        print_string_scroll(game_title, 228, 28, color_inactive_item, BG_NO_FILL, SCROLL_TITLE_MAX_CHARS, off);
+    }
 
     /* In Theme or Custom Colors menus, show live theme preview instead of game screenshot */
     if (current_menu == &custom_colors_menu || current_menu == &theme_menu)
@@ -3240,14 +3842,46 @@ u32 menu(void)
     if (current_menu && current_menu->options)
     {
       display_option = current_menu->options;
+      u32 menu_hash = ((u32)current_menu) ^ current_option_num;
+      update_menu_scroll(menu_hash);
 
       for (i = 0; i < current_menu->num_options; i++, display_option++)
       {
-        format_menu_option_line(line_buffer, sizeof(line_buffer), display_option);
-        print_menu_line(line_buffer, MENU_LIST_POS_X,
-                        (display_option->line_number * FONTHEIGHT) + 28,
-                        (display_option == current_option) ? color_active_item : color_inactive_item,
-                        BG_NO_FILL);
+        if (display_option == current_option) {
+            /* Compute scroll offset based on VALUE length, not label+value */
+            const char *fmt = display_option->display_string;
+            const char *spec_s = (fmt != NULL) ? strstr(fmt, "%s") : NULL;
+            const char *spec_d = (fmt != NULL) ? strstr(fmt, "%d") : NULL;
+            u32 value_len = 0;
+            u32 label_chars = 0;
+
+            if (spec_s != NULL) {
+                /* String option — look up choice */
+                label_chars = (u32)(spec_s - fmt);
+                const char **choices = (const char **)display_option->options;
+                u32 idx = *(display_option->current_option);
+                if (choices != NULL && idx < display_option->num_options && choices[idx] != NULL)
+                    value_len = strlen(choices[idx]);
+            } else if (spec_d != NULL) {
+                /* Numeric option — format the number */
+                label_chars = (u32)(spec_d - fmt);
+                char num_buf[16];
+                sprintf(num_buf, "%d", *(display_option->current_option));
+                value_len = strlen(num_buf);
+            } else {
+                /* No format spec — use full string */
+                value_len = (fmt != NULL) ? strlen(fmt) : 0;
+            }
+
+            u32 value_max = (SCROLL_MENU_MAX_CHARS > label_chars) ? (SCROLL_MENU_MAX_CHARS - label_chars) : 0;
+            s32 off = compute_scroll_offset(g_scroll.menu_tick, value_len, value_max);
+            print_menu_option_split(display_option, MENU_LIST_POS_X,
+                            (display_option->line_number * FONTHEIGHT) + 28,
+                            color_active_item, BG_NO_FILL, SCROLL_MENU_MAX_CHARS, off);
+        } else {            print_menu_option_split(display_option, MENU_LIST_POS_X,
+                            (display_option->line_number * FONTHEIGHT) + 28,
+                            color_inactive_item, BG_NO_FILL, SCROLL_MENU_MAX_CHARS, -1);
+        }
       }
     }
 
