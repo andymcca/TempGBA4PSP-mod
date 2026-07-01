@@ -361,6 +361,164 @@ static u16 hsv_to_color15(u32 h, u32 s, u32 v)
     return rgb_to_color15(C8TO5(r), C8TO5(g), C8TO5(b));
 }
 
+/* ------------------------------------------------------------------
+   Recent ROMs management
+   ------------------------------------------------------------------ */
+
+#define MAX_RECENT_ROMS     5
+#define RECENT_CFG_FILENAME "recent.cfg"
+
+typedef struct {
+    char path[MAX_PATH];
+} RecentRomEntry;
+
+static RecentRomEntry recent_roms[MAX_RECENT_ROMS];
+static u32 num_recent_roms = 0;
+
+/* Forward declarations */
+void load_recent_roms(void);
+static void save_recent_roms(void);
+void add_recent_rom(const char *filename);
+static void validate_recent_roms(void);
+static u32 is_recent_roms_empty(void);
+
+void load_recent_roms(void)
+{
+    SceUID fd;
+    char path[MAX_PATH];
+    u32 i;
+
+    num_recent_roms = 0;
+    memset(recent_roms, 0, sizeof(recent_roms));
+
+    sprintf(path, "%s%s", main_path, RECENT_CFG_FILENAME);
+
+    FILE_OPEN(fd, path, READ);
+    if (FILE_CHECK_VALID(fd))
+    {
+        u32 count = 0;
+        if (FILE_READ(fd, &count, sizeof(count)) == sizeof(count))
+        {
+            if (count > MAX_RECENT_ROMS)
+                count = MAX_RECENT_ROMS;
+
+            for (i = 0; i < count; i++)
+            {
+                u32 len = 0;
+                if (FILE_READ(fd, &len, sizeof(len)) != sizeof(len))
+                    break;
+                if (len >= MAX_PATH)
+                    break;
+                if (FILE_READ(fd, recent_roms[i].path, len) != (s32)len)
+                    break;
+                recent_roms[i].path[len] = '\0';
+                num_recent_roms++;
+            }
+        }
+        FILE_CLOSE(fd);
+    }
+
+    /* Validate: remove entries pointing to deleted ROMs */
+    validate_recent_roms();
+}
+
+static void save_recent_roms(void)
+{
+    SceUID fd;
+    char path[MAX_PATH];
+    u32 i;
+
+    sprintf(path, "%s%s", main_path, RECENT_CFG_FILENAME);
+
+    scePowerLock(0);
+    FILE_OPEN(fd, path, WRITE);
+    if (FILE_CHECK_VALID(fd))
+    {
+        FILE_WRITE(fd, &num_recent_roms, sizeof(num_recent_roms));
+        for (i = 0; i < num_recent_roms; i++)
+        {
+            u32 len = strlen(recent_roms[i].path);
+            FILE_WRITE(fd, &len, sizeof(len));
+            FILE_WRITE(fd, recent_roms[i].path, len);
+        }
+        FILE_CLOSE(fd);
+    }
+    scePowerUnlock(0);
+}
+
+static void validate_recent_roms(void)
+{
+    u32 i, j;
+    SceIoStat stat;
+
+    for (i = 0; i < num_recent_roms; )
+    {
+        /* Check if file still exists */
+        if (sceIoGetstat(recent_roms[i].path, &stat) < 0 || !FIO_S_ISREG(stat.st_mode))
+        {
+            /* Remove this entry by shifting remaining entries down */
+            for (j = i; j < num_recent_roms - 1; j++)
+            {
+                strcpy(recent_roms[j].path, recent_roms[j + 1].path);
+            }
+            num_recent_roms--;
+            /* Don't increment i, check the new entry at this position */
+        }
+        else
+        {
+            i++;
+        }
+    }
+}
+
+static u32 is_recent_roms_empty(void)
+{
+    return (num_recent_roms == 0);
+}
+
+void add_recent_rom(const char *filename)
+{
+    u32 i;
+    char full_path[MAX_PATH];
+    char current_dir[MAX_PATH];
+
+    /* Build full path */
+    getcwd(current_dir, MAX_PATH);
+    if (filename[0] == '/')
+        snprintf(full_path, sizeof(full_path), "%s", filename);
+    else
+        snprintf(full_path, sizeof(full_path), "%s/%s", current_dir, filename);
+
+    /* Check if already in list — if so, remove old entry */
+    for (i = 0; i < num_recent_roms; i++)
+    {
+        if (strcasecmp(recent_roms[i].path, full_path) == 0)
+        {
+            /* Shift entries down to remove this one */
+            for (; i < num_recent_roms - 1; i++)
+            {
+                strcpy(recent_roms[i].path, recent_roms[i + 1].path);
+            }
+            num_recent_roms--;
+            break;
+        }
+    }
+
+    /* Shift all entries down by one to make room at top */
+    for (i = (num_recent_roms < MAX_RECENT_ROMS ? num_recent_roms : MAX_RECENT_ROMS - 1); i > 0; i--)
+    {
+        strcpy(recent_roms[i].path, recent_roms[i - 1].path);
+    }
+
+    /* Add new entry at top */
+    strcpy(recent_roms[0].path, full_path);
+    if (num_recent_roms < MAX_RECENT_ROMS)
+        num_recent_roms++;
+
+    save_recent_roms();
+}
+
+
 /* Forward declarations for status bar functions */
 static void update_status_string(char *time_str, char *batt_str, u16 *color_batt);
 static void update_status_string_gbk(char *time_str, char *batt_str, u16 *color_batt);
@@ -1301,6 +1459,11 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name)
   s32 return_value = 1;
   s32 repeat;
 
+  /* Recent ROMs browser state */
+  u32 in_recent_section = 0;
+  u32 recent_selection = 0;
+  u32 file_list_y_offset = 0;
+
   GUI_ACTION_TYPE gui_action;
 
   char time_str[40];
@@ -1347,6 +1510,9 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name)
   {
     chdir(default_dir_name);
   }
+
+  /* Load recent ROMs list and validate entries */
+  load_recent_roms();
 
   /* File browser is not the main menu; disable OS exit dialog here */
   sceImposeSetHomePopup(0);
@@ -1525,13 +1691,61 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name)
         draw_box_fill(SBAR_X1I, SBAR_Y1I, SBAR_X2I, SBAR_Y2I, color_scroll_bar);
       }
 
+      /* --- Recent Games Section --- */
+      file_list_y_offset = 0;
+      if (!is_recent_roms_empty())
+      {
+        u32 recent_y = FILE_LIST_POS_Y;
+        u16 header_color = color_help_text;
+
+        /* Header */
+        if (option_language == 0)
+          print_string("--- Recent Games ---", FILE_LIST_POS_X, recent_y, header_color, BG_NO_FILL);
+        else
+          print_string_gbk("--- Recent Games ---", FILE_LIST_POS_X, recent_y, header_color, BG_NO_FILL);
+        recent_y += FONTHEIGHT;
+
+        /* Recent ROM entries */
+        for (i = 0; i < num_recent_roms; i++)
+        {
+          const char *rom_name = strrchr(recent_roms[i].path, '/');
+          if (rom_name == NULL)
+            rom_name = recent_roms[i].path;
+          else
+            rom_name++;
+
+          u16 line_color;
+          if (in_recent_section && i == recent_selection)
+          {
+            line_color = color_active_item;
+            s32 off = compute_scroll_offset(g_scroll.file_tick, strlen(rom_name), SCROLL_FILE_MAX_CHARS);
+            print_string_scroll(rom_name, FILE_LIST_POS_X, recent_y, line_color, BG_NO_FILL, SCROLL_FILE_MAX_CHARS, off);
+          }
+          else
+          {
+            line_color = color_inactive_item;
+            print_string_clipped(rom_name, FILE_LIST_POS_X, recent_y, line_color, BG_NO_FILL, SCROLL_FILE_MAX_CHARS);
+          }
+          recent_y += FONTHEIGHT;
+        }
+
+        /* Separator */
+        if (option_language == 0)
+          print_string("--- All Games ---", FILE_LIST_POS_X, recent_y, header_color, BG_NO_FILL);
+        else
+          print_string_gbk("--- All Games ---", FILE_LIST_POS_X, recent_y, header_color, BG_NO_FILL);
+
+        file_list_y_offset = (num_recent_roms + 2) * FONTHEIGHT;
+      }
+
+      /* --- Normal File List --- */
       for (i = 0; i < FILE_LIST_ROWS; i++)
       {
         current_file_number = i + scroll_value[FILE_LIST];
 
         if (current_file_number < num[FILE_LIST])
         {
-          u32 is_selected = ((current_file_number == selection[FILE_LIST]) && (column == FILE_LIST));
+          u32 is_selected = ((current_file_number == selection[FILE_LIST]) && (column == FILE_LIST) && !in_recent_section);
           if (is_selected)
             current_line_color = color_active_item;
           else
@@ -1539,9 +1753,9 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name)
 
           if (is_selected) {
               s32 off = compute_scroll_offset(g_scroll.file_tick, strlen(file_list[current_file_number]), SCROLL_FILE_MAX_CHARS);
-              print_string_scroll(file_list[current_file_number], FILE_LIST_POS_X, FILE_LIST_POS_Y + (i * FONTHEIGHT), current_line_color, BG_NO_FILL, SCROLL_FILE_MAX_CHARS, off);
+              print_string_scroll(file_list[current_file_number], FILE_LIST_POS_X, FILE_LIST_POS_Y + file_list_y_offset + (i * FONTHEIGHT), current_line_color, BG_NO_FILL, SCROLL_FILE_MAX_CHARS, off);
           } else {
-              print_string_clipped(file_list[current_file_number], FILE_LIST_POS_X, FILE_LIST_POS_Y + (i * FONTHEIGHT), current_line_color, BG_NO_FILL, SCROLL_FILE_MAX_CHARS);
+              print_string_clipped(file_list[current_file_number], FILE_LIST_POS_X, FILE_LIST_POS_Y + file_list_y_offset + (i * FONTHEIGHT), current_line_color, BG_NO_FILL, SCROLL_FILE_MAX_CHARS);
           }
         }
       }
@@ -1583,14 +1797,45 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name)
       switch (gui_action)
       {
         case CURSOR_DOWN:
-          if (selection[column] < (num[column] - 1))
+          if (in_recent_section)
           {
-            selection[column]++;
-
-            if (in_scroll[column] == (FILE_LIST_ROWS - 1))
-              scroll_value[column]++;
+            if (recent_selection < num_recent_roms - 1)
+            {
+              recent_selection++;
+            }
             else
-              in_scroll[column]++;
+            {
+              /* Move from recent section to file list */
+              in_recent_section = 0;
+              column = FILE_LIST;
+              selection[FILE_LIST] = 0;
+              scroll_value[FILE_LIST] = 0;
+              in_scroll[FILE_LIST] = 0;
+            }
+          }
+          else if (column == FILE_LIST)
+          {
+            if (selection[FILE_LIST] < (num[FILE_LIST] - 1))
+            {
+              selection[FILE_LIST]++;
+
+              if (in_scroll[FILE_LIST] == (FILE_LIST_ROWS - 1))
+                scroll_value[FILE_LIST]++;
+              else
+                in_scroll[FILE_LIST]++;
+            }
+          }
+          else /* DIR_LIST */
+          {
+            if (selection[column] < (num[column] - 1))
+            {
+              selection[column]++;
+
+              if (in_scroll[column] == (FILE_LIST_ROWS - 1))
+                scroll_value[column]++;
+              else
+                in_scroll[column]++;
+            }
           }
           break;
 
@@ -1643,14 +1888,40 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name)
           break;
 
         case CURSOR_UP:
-          if (selection[column] != 0)
+          if (!in_recent_section && column == FILE_LIST && selection[FILE_LIST] == 0 && !is_recent_roms_empty())
           {
-            selection[column]--;
+            /* Move from file list to recent section */
+            in_recent_section = 1;
+            recent_selection = num_recent_roms - 1;
+          }
+          else if (in_recent_section)
+          {
+            if (recent_selection > 0)
+              recent_selection--;
+          }
+          else if (column == FILE_LIST)
+          {
+            if (selection[FILE_LIST] != 0)
+            {
+              selection[FILE_LIST]--;
 
-            if (in_scroll[column] == 0)
-              scroll_value[column]--;
-            else
-              in_scroll[column]--;
+              if (in_scroll[FILE_LIST] == 0)
+                scroll_value[FILE_LIST]--;
+              else
+                in_scroll[FILE_LIST]--;
+            }
+          }
+          else /* DIR_LIST */
+          {
+            if (selection[column] != 0)
+            {
+              selection[column]--;
+
+              if (in_scroll[column] == 0)
+                scroll_value[column]--;
+              else
+                in_scroll[column]--;
+            }
           }
           break;
 
@@ -1701,7 +1972,29 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name)
           break;
 
         case CURSOR_SELECT:
-          if (column == DIR_LIST)
+          if (in_recent_section)
+          {
+            /* Load selected recent ROM */
+            char *recent_path = recent_roms[recent_selection].path;
+            char *last_slash = strrchr(recent_path, '/');
+
+            if (last_slash != NULL)
+            {
+              size_t dir_len = last_slash - recent_path;
+              char recent_dir[MAX_PATH];
+              memcpy(recent_dir, recent_path, dir_len);
+              recent_dir[dir_len] = '\0';
+              chdir(recent_dir);
+              strcpy(result, last_slash + 1);
+            }
+            else
+            {
+              strcpy(result, recent_path);
+            }
+            repeat = 0;
+            return_value = 0;
+          }
+          else if (column == DIR_LIST)
           {
             repeat = 0;
             chdir(dir_list[selection[DIR_LIST]]);
@@ -2355,6 +2648,9 @@ u32 menu(void)
 
       reset_gba();
       reg[CHANGED_PC_STATUS] = 1;
+
+      /* Add to recent ROMs list */
+      add_recent_rom(filename_buffer);
 
       /* Prompt to load auto-savestate for the newly loaded game */
       if (auto_savestate_exists())
@@ -3126,7 +3422,16 @@ u32 menu(void)
             {
               size_t chunk = len - offset;
               if (chunk > max_chars)
+              {
                 chunk = max_chars;
+                /* Word-wrap: find last space within the chunk so we don't
+                   split a hex number (or any token) across lines. */
+                size_t break_at = chunk;
+                while (break_at > 0 && start[offset + break_at - 1] != ' ')
+                  break_at--;
+                if (break_at > 0)
+                  chunk = break_at;
+              }
               if (chunk >= sizeof(line_buf))
                 chunk = sizeof(line_buf) - 1;
 

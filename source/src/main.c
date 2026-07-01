@@ -21,6 +21,11 @@
 
 #include "common.h"
 
+/* Forward declarations for recent ROMs functions (defined in gui.c) */
+extern void load_recent_roms(void);
+extern void add_recent_rom(const char *filename);
+
+
 
 // Main Thread Params
 #define PRIORITY       (32)
@@ -809,6 +814,7 @@ static void setup_main(void)
 
   load_config_file();
   load_theme_config();
+  load_recent_roms();
 
   setup_callbacks();
   sceImposeSetHomePopup(enable_home_menu ^ 1);
@@ -853,6 +859,7 @@ int user_main(int argc, char *argv[])
       error_msg(MSG[MSG_ERR_LOAD_GAMEPACK], CONFIRMATION_QUIT);
       quit();
     }
+    add_recent_rom(argv[1]);
   }
   else
   {
@@ -868,6 +875,10 @@ int user_main(int argc, char *argv[])
         error_msg(MSG[MSG_ERR_LOAD_GAMEPACK], CONFIRMATION_CONT);
         menu();
       }
+      else
+      {
+        add_recent_rom(load_filename);
+      }
     }
     else if (load_file(file_ext, load_filename, dir_roms) < 0)
     {
@@ -878,6 +889,10 @@ int user_main(int argc, char *argv[])
       clear_screen(COLOR32_BLACK);
       error_msg(MSG[MSG_ERR_LOAD_GAMEPACK], CONFIRMATION_CONT);
       menu();
+    }
+    else
+    {
+      add_recent_rom(load_filename);
     }
   }
 
