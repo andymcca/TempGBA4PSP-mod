@@ -3006,6 +3006,11 @@ u32 menu(void)
     char *end = buf + sizeof(buf);
     int i;
     GUI_ACTION_TYPE gui_action = CURSOR_NONE;
+    s32 scroll_line = 0;
+    s32 total_lines = 0;
+    char *line_ptrs[128];
+    s32 line_count = 0;
+
 
     if (gamepak_filename[0] == '\0')
     {
@@ -3014,8 +3019,10 @@ u32 menu(void)
     }
 
     snprintf(buf, sizeof(buf),
-      "ROM header: internal title @0xA0 (12 bytes), game_code @0xAC (4), maker @0xB0 (2).\n"
-      "game_config.txt matches game_name, game_code, then vender_code or vendor_code.\n\n"
+      "ROM header: internal title @0xA0 (12 bytes),\n"
+      "game_code @0xAC (4), maker @0xB0 (2).\n"
+      "game_config.txt matches game_name, game_code,\n"
+      "then vender_code or vendor_code.\n\n"
       "%s%s\n\n"
       "Hex 0xA0..0xB1 (18 bytes): ",
       main_path,
@@ -3056,39 +3063,116 @@ u32 menu(void)
     i = (int)strlen(buf);
     snprintf(buf + i, sizeof(buf) - (size_t)i, "\n\n%s", MSG[MSG_ERR_CONT]);
 
-    clear_screen(COLOR15_TO_32(color_bg));
-    /* mh_print (print_string) does not wrap on '\n'; only print the first line. */
+    /* Count total lines and build line pointer array */
     {
-      u16 ypos = 6;
       char *walk = buf;
-
-      while (*walk != '\0' && (u32)ypos + FONTHEIGHT <= PSP_SCREEN_HEIGHT)
+      line_ptrs[0] = walk;
+      line_count = 1;
+      while (*walk != '\0' && line_count < 128)
       {
         char *nl = strchr(walk, '\n');
-
-        if (nl != NULL)
-          *nl = '\0';
-
-        if (option_language == 0)
-          print_string(walk, 6, ypos, color_active_item, color_bg);
-        else
-          print_string_gbk(walk, 6, ypos, color_active_item, color_bg);
-
         if (nl != NULL)
         {
-          *nl = '\n';
           walk = nl + 1;
+          line_ptrs[line_count] = walk;
+          line_count++;
         }
         else
+        {
           break;
-
-        ypos = (u16)(ypos + FONTHEIGHT);
+        }
       }
+      /* line_count includes the empty line after last \n, so effective lines = line_count - 1 */
+      total_lines = line_count - 1;
     }
-    flip_screen(1);
 
-    while (gui_action == CURSOR_NONE)
-      gui_action = get_gui_input();
+    {
+      s32 visible_lines = (PSP_SCREEN_HEIGHT - 6) / FONTHEIGHT;
+      s32 max_scroll = (total_lines > visible_lines) ? (total_lines - visible_lines) : 0;
+
+      do
+      {
+        clear_screen(COLOR15_TO_32(color_bg));
+
+        {
+          u16 ypos = 6;
+          s32 line_idx;
+          u32 max_chars = (PSP_SCREEN_WIDTH - 6 - 16) / FONTWIDTH;
+          s32 lines_drawn = 0;
+
+          for (line_idx = scroll_line; line_idx < total_lines && lines_drawn < visible_lines; line_idx++)
+          {
+            char line_buf[80];
+            char *start = line_ptrs[line_idx];
+            char *next_nl = strchr(start, '\n');
+            size_t len;
+            size_t offset = 0;
+
+            if (next_nl != NULL)
+              len = (size_t)(next_nl - start);
+            else
+              len = strlen(start);
+
+            /* Empty line = spacing (draw nothing but advance) */
+            if (len == 0)
+            {
+              ypos = (u16)(ypos + FONTHEIGHT);
+              lines_drawn++;
+              continue;
+            }
+
+            /* Wrap long lines across multiple display lines */
+            while (offset < len && lines_drawn < visible_lines)
+            {
+              size_t chunk = len - offset;
+              if (chunk > max_chars)
+                chunk = max_chars;
+              if (chunk >= sizeof(line_buf))
+                chunk = sizeof(line_buf) - 1;
+
+              memcpy(line_buf, start + offset, chunk);
+              line_buf[chunk] = '\0';
+
+              if (option_language == 0)
+                print_string(line_buf, 6, ypos, color_active_item, color_bg);
+              else
+                print_string_gbk(line_buf, 6, ypos, color_active_item, color_bg);
+
+              ypos = (u16)(ypos + FONTHEIGHT);
+              lines_drawn++;
+              offset += chunk;
+            }
+          }
+        }
+
+        /* Scroll indicators */
+        if (scroll_line > 0)
+          print_string(FONT_CURSOR_UP_FILL, PSP_SCREEN_WIDTH - 16, 6, color_scroll_bar, color_bg);
+        if (scroll_line < max_scroll)
+          print_string(FONT_CURSOR_DOWN_FILL, PSP_SCREEN_WIDTH - 16, PSP_SCREEN_HEIGHT - FONTHEIGHT - 2, color_scroll_bar, color_bg);
+
+        /* Exit hint at bottom */
+        print_swap_aware(MSG[MSG_ERR_CONT], X_POS_CENTER, PSP_SCREEN_HEIGHT - FONTHEIGHT - 2, color_help_text, color_bg);
+
+        flip_screen(1);
+
+        gui_action = get_gui_input();
+
+        switch (gui_action)
+        {
+          case CURSOR_UP:
+            if (scroll_line > 0)
+              scroll_line--;
+            break;
+          case CURSOR_DOWN:
+            if (scroll_line < max_scroll)
+              scroll_line++;
+            break;
+          default:
+            break;
+        }
+      } while (gui_action != CURSOR_SELECT && gui_action != CURSOR_EXIT && gui_action != CURSOR_BACK);
+    }
   }
 
 
@@ -4728,18 +4812,14 @@ s32 load_dir_cfg(char *file_name)
     check_directory(dir_snap,  item_snap);
     check_directory(dir_cheat, item_cheat);
 
-    if (str_line > 7)
-    {
-      sprintf(str_buf, MSG[MSG_ERR_SET_DIR_2], main_path);
-      sprintf(str_buf, "%s\n\n%s", str_buf, MSG[MSG_ERR_CONT]);
+      if (str_line > 7)
+      {
+        sprintf(str_buf, MSG[MSG_ERR_SET_DIR_2], main_path);
+        sprintf(str_buf, "%s\n\n%s", str_buf, MSG[MSG_ERR_CONT]);
 
-      str_line += FONTHEIGHT;
-	  if (option_language == 0)
-      print_string(str_buf, 7, str_line, COLOR15_WHITE, COLOR15_BLACK);
-	  else
-      print_string_gbk(str_buf, 7, str_line, COLOR15_WHITE, COLOR15_BLACK);
-      error_msg("", CONFIRMATION_NONE);
-    }
+        str_line += FONTHEIGHT;
+        error_msg(str_buf, CONFIRMATION_NONE);
+      }
 
     return 0;
   }

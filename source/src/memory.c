@@ -20,6 +20,8 @@
 
 #include "common.h"
 
+/* Popup depth frame — declared in psp_video.h, defined in psp_video.c */
+extern void draw_popup_frame_auto(int x, int y, int w, int h);
 
 #define CONFIG_FILENAME  "game_config.txt"
 
@@ -3509,19 +3511,17 @@ s32 load_gamepak(char *name)
   s32 file_size = -1;
   gamepak_file_large = -1;
 
-  draw_box_fill(110, 50, 370, 220, color_bg);
-  draw_box_line(120, 60, 360, 210, color_inactive_item);
+  draw_popup_frame_auto(110, 50, 260, 170);
   if (option_language == 0)
-	print_string(MSG[MSG_LOADING_ROM], X_POS_CENTER, 100, color_active_item, BG_NO_FILL);
+	  print_string(MSG[MSG_LOADING_ROM], X_POS_CENTER, 100, color_active_item, BG_NO_FILL);
   else
-	print_string_gbk(MSG[MSG_LOADING_ROM], X_POS_CENTER, 100, color_active_item, BG_NO_FILL);
+	  print_string_gbk(MSG[MSG_LOADING_ROM], X_POS_CENTER, 100, color_active_item, BG_NO_FILL);
   flip_screen(1);
-  draw_box_fill(110, 50, 370, 220, color_bg);
-  draw_box_line(120, 60, 360, 210, color_inactive_item);
+  draw_popup_frame_auto(110, 50, 260, 170);
   if (option_language == 0)
-	print_string(MSG[MSG_LOADING_ROM], X_POS_CENTER, 100, color_active_item, BG_NO_FILL);
+	  print_string(MSG[MSG_LOADING_ROM], X_POS_CENTER, 100, color_active_item, BG_NO_FILL);
   else
-	print_string_gbk(MSG[MSG_LOADING_ROM], X_POS_CENTER, 100, color_active_item, BG_NO_FILL);
+	  print_string_gbk(MSG[MSG_LOADING_ROM], X_POS_CENTER, 100, color_active_item, BG_NO_FILL);
 
   scePowerLock(0);
   set_cpu_clock(PSP_CLOCK_333);

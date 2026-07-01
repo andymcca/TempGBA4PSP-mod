@@ -31,6 +31,13 @@ void draw_box_alpha(u16 x1, u16 y1, u16 x2, u16 y2, u32 color);
 void draw_hline(u16 sx, u16 ex, u16 y, u16 color);
 void draw_vline(u16 x, u16 sy, u16 ey, u16 color);
 
+/* Popup depth frame functions */
+u16 color15_darken(u16 c, int pct);
+u16 color15_lighten(u16 c, int pct);
+u32 color15_to_argb(u16 c, u8 alpha);
+void draw_popup_frame(int x, int y, int w, int h, u16 bg_color);
+void draw_popup_frame_auto(int x, int y, int w, int h);
+
 int draw_volume_status(int draw);
 int draw_volume_status_null(int draw);
 
