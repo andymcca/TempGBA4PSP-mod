@@ -862,4 +862,10 @@
   // MSG_ERR_ROM_NOT_FOUND
   "未找到 ROM 文件",
 
+  // MSG_BROWSER_RECENT_GAMES
+  "--- 近期比赛 ---",
+
+  // MSG_BROWSER_ALL_GAMES
+  "--- 所有游戏 ---",
+
 },

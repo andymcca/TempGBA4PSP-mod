@@ -863,4 +863,10 @@
   // MSG_ERR_ROM_NOT_FOUND
   "找不到 ROM 檔案",
 
+  // MSG_BROWSER_RECENT_GAMES
+  "--- 近期遊戲 ---",
+
+  // MSG_BROWSER_ALL_GAMES
+  "--- 所有遊戲 ---",
+
 },

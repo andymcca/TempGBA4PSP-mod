@@ -862,4 +862,10 @@
   // MSG_ERR_ROM_NOT_FOUND
   "ROM file not found",
 
+  // MSG_BROWSER_RECENT_GAMES
+  "--- Recent Games ---",
+
+  // MSG_BROWSER_ALL_GAMES
+  "--- All Games ---",
+
 },

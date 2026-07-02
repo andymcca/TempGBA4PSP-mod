@@ -29,7 +29,7 @@ extern char dir_cfg[MAX_PATH];
 extern char dir_snap[MAX_PATH];
 extern char dir_cheat[MAX_PATH];
 
-s32 load_file(const char **wildcards, char *result, char *default_dir_name);
+s32 load_file(const char **wildcards, char *result, char *default_dir_name, u32 show_recent);
 
 s32 load_game_config_file(void);
 s32 load_config_file(void);

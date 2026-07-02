@@ -880,7 +880,7 @@ int user_main(int argc, char *argv[])
         add_recent_rom(load_filename);
       }
     }
-    else if (load_file(file_ext, load_filename, dir_roms) < 0)
+    else if (load_file(file_ext, load_filename, dir_roms, 1) < 0)
     {
       menu();
     }
