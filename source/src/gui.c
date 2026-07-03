@@ -2793,6 +2793,8 @@ u32 menu(void)
     while (file_browser_repeat)
     {
       file_browser_repeat = 0;
+      same_rom = 0;
+      slot_parsed = 0;
 
       if (load_file(file_ext, filename_buffer, dir_state, 0) == 0)
       {
