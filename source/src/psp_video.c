@@ -40,6 +40,79 @@ static void draw_volume(int volume);
 
 int (*__draw_volume_status)(int draw);
 
+static void color15_to_rgb(u16 c, u8 *r, u8 *g, u8 *b)
+{
+  *r = c & 0x1F;
+  *g = (c >> 5) & 0x1F;
+  *b = (c >> 10) & 0x1F;
+}
+
+static u16 rgb_to_color15(u8 r, u8 g, u8 b)
+{
+  return (r & 0x1F) | ((g & 0x1F) << 5) | ((b & 0x1F) << 10);
+}
+
+u16 color15_darken(u16 c, int pct)
+{
+  u8 r, g, b;
+  color15_to_rgb(c, &r, &g, &b);
+  r = (r * (100 - pct)) / 100;
+  g = (g * (100 - pct)) / 100;
+  b = (b * (100 - pct)) / 100;
+  return rgb_to_color15(r, g, b);
+}
+
+u16 color15_lighten(u16 c, int pct)
+{
+  u8 r, g, b;
+  color15_to_rgb(c, &r, &g, &b);
+  r = r + ((31 - r) * pct) / 100;
+  g = g + ((31 - g) * pct) / 100;
+  b = b + ((31 - b) * pct) / 100;
+  return rgb_to_color15(r, g, b);
+}
+
+u32 color15_to_argb(u16 c, u8 alpha)
+{
+  u8 r5, g5, b5;
+  color15_to_rgb(c, &r5, &g5, &b5);
+  u8 r8 = (r5 << 3) | (r5 >> 2);
+  u8 g8 = (g5 << 3) | (g5 >> 2);
+  u8 b8 = (b5 << 3) | (b5 >> 2);
+  return ((u32)alpha << 24) | ((u32)r8 << 16) | ((u32)g8 << 8) | b8;
+}
+
+#define POPUP_SHADOW_OFS 3
+#define POPUP_BORDER     1
+
+void draw_popup_frame(int x, int y, int w, int h, u16 bg_color)
+{
+  u32 dim_color = 0x8F000000;
+  u16 shadow_color;
+  u16 highlight;
+
+  draw_box_alpha(0, 0, PSP_SCREEN_WIDTH - 1, PSP_SCREEN_HEIGHT - 1, dim_color);
+
+  shadow_color = color15_darken(color_bg, 60);
+  draw_box_fill(x + POPUP_SHADOW_OFS, y + POPUP_SHADOW_OFS,
+                x + POPUP_SHADOW_OFS + w - 1, y + POPUP_SHADOW_OFS + h - 1,
+                shadow_color);
+
+  draw_box_line(x - POPUP_BORDER, y - POPUP_BORDER,
+                x + w + POPUP_BORDER - 1, y + h + POPUP_BORDER - 1,
+                color_active_item);
+
+  draw_box_fill(x, y, x + w - 1, y + h - 1, bg_color);
+
+  highlight = color15_lighten(bg_color, 15);
+  draw_hline(x + 1, x + w - 2, y + 1, highlight);
+}
+
+void draw_popup_frame_auto(int x, int y, int w, int h)
+{
+  u16 popup_bg = color15_lighten(color_bg, 10);
+  draw_popup_frame(x, y, w, h, popup_bg);
+}
 
 void init_video(int devkit_version)
 {
