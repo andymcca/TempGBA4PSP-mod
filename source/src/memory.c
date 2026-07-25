@@ -3628,6 +3628,11 @@ u32 load_state(char *savestate_filename)
   }
   sound_pause = prev_sound_pause;
 
+  /* Undo buffer: snapshot current progress to AUTO before replacing it,
+     unless we are loading AUTO itself. */
+  if (savestate_slot != 10)
+    auto_savestate_sleep();
+
   sprintf(savestate_path, "%s%s", dir_state, savestate_filename);
 
   scePowerLock(0);

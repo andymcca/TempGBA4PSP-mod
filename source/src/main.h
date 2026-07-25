@@ -81,7 +81,7 @@ extern u32 option_clock_speed;
 extern u32 option_hblank_irq_window_start;
 extern u32 option_hblank_irq_window_end;
 extern u32 option_psp_vsync;
-/* 1 = write _auto.svs on sleep/suspend (main thread only). Default on. */
+/* 1 = write _auto.svs on sleep/suspend, exit, and ROM switch (main thread). Default on. */
 extern u32 option_auto_savestate_sleep;
 
 extern char main_path[MAX_PATH];

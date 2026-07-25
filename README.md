@@ -49,7 +49,7 @@ It remains a homebrew GBA emulator — you need a legal BIOS dump (`gba_bios.bin
 - **Themed dialog popups** — yes/no and error dialogs use theme-aware framed chrome instead of bare text.
 - **Scrolling labels** — long ROM names, paths, and menu titles scroll in place so they stay readable.
 - **Recent ROMs** — ROM browser shows a Recent Games section (stored in `recent.cfg`); cheat/state browsers do not wipe that list.
-- **Auto-savestate (slot AUTO)** — optional sleep/suspend write to `_auto.svs` (Emulator Options → Auto-save on sleep; default on). Runs on the main thread only (not from the power callback). Exit and ROM-switch do not auto-save. Loading a ROM can prompt to restore the auto slot. Also available as slot AUTO in the savestate submenu (main-menu numeric spinner remains 0–9).
+- **Auto-savestate (slot AUTO)** — optional writes to `_auto.svs` on sleep/suspend, exit, and ROM switch (Continue), and before loading another savestate (Undo — reload AUTO to reverse a bad load). Emulator Options → Auto-savestate; default on. Main-thread only (not from the power callback). Loading a ROM can prompt to restore that slot. Also available as slot AUTO in the savestate submenu (main-menu numeric spinner remains 0–9).
 - **Savestate UX** — details save/load fixes; leaving the menu after state operations behaves more predictably.
 - **Menu polish** — fixed `%s` label formatting, restored cursor repeat speed, and earlier crash/text issues between game ↔ menu transitions.
 

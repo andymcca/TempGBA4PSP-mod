@@ -2163,6 +2163,8 @@ static void get_savestate_filename(u32 slot, char *name_buffer)
   }
 }
 
+/* Silent write to slot AUTO when the option is on. Used for sleep/suspend,
+   exit, ROM switch (Continue), and pre-load undo. Main-thread only. */
 void auto_savestate_sleep(void)
 {
     if (option_auto_savestate_sleep == 0)
@@ -2672,8 +2674,9 @@ u32 menu(void)
     if (!first_load)
     {
       update_backup_immediately();
-      /* Sleep/suspend autosave only — gated inside auto_savestate_sleep() */
       auto_savestate_sleep();
+      /* Avoid a second write when psp_sleep_loop runs after suspend. */
+      sleep_auto_saved = 1;
     }
 
     scePowerTick(0);
@@ -2687,13 +2690,15 @@ u32 menu(void)
     save_game_config_file();
 
     if (!first_load)
-    {
       update_backup_immediately();
-      /* Do not silently overwrite _auto.svs on ROM switch (opt-in later). */
-    }
 
     if (load_file(file_ext, filename_buffer, dir_roms, 1) == 0)
     {
+      /* Only checkpoint after the user actually picks a ROM (cancel must
+         not overwrite AUTO). Still the old game until load_gamepak(). */
+      if (!first_load)
+        auto_savestate_sleep();
+
       if (load_gamepak(filename_buffer) < 0)
       {
         clear_screen(COLOR32_BLACK);
@@ -2900,6 +2905,9 @@ u32 menu(void)
                      MSG[MSG_LOAD_STATE_FILE]);
             if (yesno_dialog(dialog_msg) == 0)
             {
+                /* Undo buffer: keep current progress in AUTO unless loading AUTO. */
+                if (slot_parsed != 10)
+                  auto_savestate_sleep();
                 if (load_state_silent(filename_buffer) != 0)
                 {
                     return_value = 1;
@@ -2934,6 +2942,8 @@ u32 menu(void)
                 {
                     save_game_config_file();
                     update_backup_immediately();
+                    /* Leaving this game for another ROM's savestate. */
+                    auto_savestate_sleep();
                 }
 
                 /* Try to find and load the ROM file */
@@ -4173,7 +4183,6 @@ u32 menu(void)
                     menu_suspend();
                     break;
                   case 18: // Exit TempGBA
-                    /* No silent autosave on exit by default. */
                     quit();
                     break;
                   default:
@@ -4190,7 +4199,8 @@ u32 menu(void)
                   default:
                     if (current_option->line_number < 11)
                     {
-                      /* No silent pre-load autosave on slot switch by default. */
+                      /* Load of slots 0-9: load_state() writes AUTO first as undo.
+                         Loading slot AUTO itself skips that. */
                       if ((savestate_action != 0 ? menu_save_state() : menu_load_state()) != 0)
                       {
                         return_value = 1;

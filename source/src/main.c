@@ -922,6 +922,9 @@ int main(int argc, char *argv[])
 
 void quit(void)
 {
+  /* Continue-where-you-left-off: write AUTO before tearing down. */
+  auto_savestate_sleep();
+
   update_backup_immediately();
   save_config_file();
 

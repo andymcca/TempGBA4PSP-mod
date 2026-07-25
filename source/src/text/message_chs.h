@@ -869,9 +869,9 @@
   "--- 所有游戏 ---",
 
   // MSG_OPTION_MENU_AUTO_SAVESTATE_SLEEP
-  "Auto-save on sleep",
+  "Auto-savestate",
 
   // MSG_TOOLTIP_AUTO_SAVESTATE_SLEEP
-  "When ON, writes slot AUTO (_auto.svs) on sleep/suspend from the main thread.\nExit and ROM-switch do not auto-save.",
+  "When ON, writes slot AUTO (_auto.svs) on sleep/suspend, exit, and ROM switch\n(Continue), and before loading another state (Undo). Main-thread only.",
 
 },
