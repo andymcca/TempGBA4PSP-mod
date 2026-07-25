@@ -230,8 +230,11 @@
   // MSG_STATE_MENU_2
   "返回",
 
+  // MSG_STATE_MENU_DELETE
+  "删除",
+
   // MSG_STATE_MENU_HELP_0
-  FONT_BTN_CIRCLE_GBK ":执行   " FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":加载/保存   " FONT_BTN_CROSS_GBK ":退出",
+  FONT_BTN_CIRCLE_GBK ":执行   " FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":加载/保存   " FONT_BTN_TRIANGLE_GBK ":删除   " FONT_BTN_CROSS_GBK ":退出",
 
   // MSG_STATE_MENU_HELP_1
   FONT_BTN_CIRCLE_GBK ":文件浏览器   " FONT_L_TRIGGER_GBK ":快捷键   "FONT_BTN_CROSS_GBK ":退出",
@@ -575,6 +578,12 @@
   // MSG_SAVE_STATE_NO
   "保存状态槽: %d",
 
+  // MSG_LOAD_STATE_AUTO
+  "加载状态槽: AUTO",
+
+  // MSG_SAVE_STATE_AUTO
+  "保存状态槽: AUTO",
+
   // MSG_YES_NO
   FONT_BTN_CIRCLE_GBK ":是   " FONT_BTN_CROSS_GBK ":否",
 
@@ -840,5 +849,29 @@
 
   // MSG_VOL_100
   "100",
+
+  // MSG_AUTO_SAVESTATE_LOAD_PROMPT
+  "加载自动保存状态?",
+
+  // MSG_LOAD_ROM_AND_STATE
+  "加载 %s 并保存状态?",
+
+  // MSG_LOAD_STATE_FILE
+  "加载保存状态文件?",
+
+  // MSG_ERR_ROM_NOT_FOUND
+  "未找到 ROM 文件",
+
+  // MSG_BROWSER_RECENT_GAMES
+  "--- 近期比赛 ---",
+
+  // MSG_BROWSER_ALL_GAMES
+  "--- 所有游戏 ---",
+
+  // MSG_OPTION_MENU_AUTO_SAVESTATE_SLEEP
+  "Auto-save on sleep",
+
+  // MSG_TOOLTIP_AUTO_SAVESTATE_SLEEP
+  "When ON, writes slot AUTO (_auto.svs) on sleep/suspend from the main thread.\nExit and ROM-switch do not auto-save.",
 
 },

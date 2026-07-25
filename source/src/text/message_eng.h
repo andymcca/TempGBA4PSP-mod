@@ -230,8 +230,11 @@
   // MSG_STATE_MENU_2
   "Back",
 
+  // MSG_STATE_MENU_DELETE
+  "Delete",
+
   // MSG_STATE_MENU_HELP_0
-  FONT_BTN_CIRCLE_GBK ":Execute   " FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Load/Save   " FONT_BTN_CROSS_GBK ":Exit",
+  FONT_BTN_CIRCLE_GBK ":Execute   " FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Load/Save   " FONT_BTN_TRIANGLE_GBK ":Delete   " FONT_BTN_CROSS_GBK ":Exit",
 
   // MSG_STATE_MENU_HELP_1
   FONT_BTN_CIRCLE_GBK ":File browser   " FONT_L_TRIGGER_GBK ":Shortcut key   "FONT_BTN_CROSS_GBK ":Exit",
@@ -575,6 +578,12 @@
   // MSG_SAVE_STATE_NO
   "Save state slot: %d",
 
+  // MSG_LOAD_STATE_AUTO
+  "Load state slot: AUTO",
+
+  // MSG_SAVE_STATE_AUTO
+  "Save state slot: AUTO",
+
   // MSG_YES_NO
   FONT_BTN_CIRCLE_GBK ":Yes   " FONT_BTN_CROSS_GBK ":No",
 
@@ -840,5 +849,29 @@
 
   // MSG_VOL_100
   "100",
+
+  // MSG_AUTO_SAVESTATE_LOAD_PROMPT
+  "Load auto-savestate?",
+
+  // MSG_LOAD_ROM_AND_STATE
+  "Load %s and savestate?",
+
+  // MSG_LOAD_STATE_FILE
+  "Load savestate file?",
+
+  // MSG_ERR_ROM_NOT_FOUND
+  "ROM file not found",
+
+  // MSG_BROWSER_RECENT_GAMES
+  "--- Recent Games ---",
+
+  // MSG_BROWSER_ALL_GAMES
+  "--- All Games ---",
+
+  // MSG_OPTION_MENU_AUTO_SAVESTATE_SLEEP
+  "Auto-save on sleep",
+
+  // MSG_TOOLTIP_AUTO_SAVESTATE_SLEEP
+  "When ON, writes slot AUTO (_auto.svs) on sleep/suspend from the main thread.\nExit and ROM-switch do not auto-save.",
 
 },

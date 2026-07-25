@@ -21,6 +21,11 @@
 
 #include "common.h"
 
+/* Forward declarations for recent ROMs functions (defined in gui.c) */
+extern void load_recent_roms(void);
+extern void add_recent_rom(const char *filename);
+
+
 
 // Main Thread Params
 #define PRIORITY       (32)
@@ -56,6 +61,7 @@ u32 option_clock_speed = PSP_CLOCK_333;
 u32 option_hblank_irq_window_start = 1;
 u32 option_hblank_irq_window_end = 160;
 u32 option_psp_vsync = 0;
+u32 option_auto_savestate_sleep = 1;
 
 char main_path[MAX_PATH];
 
@@ -63,6 +69,7 @@ int date_format = 0;
 u32 enable_home_menu = 1;
 
 u32 sleep_flag = 0;
+u32 sleep_auto_saved = 0;
 
 u32 synchronize_flag = 1;
 u32 psp_fps_debug = 0;
@@ -808,6 +815,7 @@ static void setup_main(void)
 
   load_config_file();
   load_theme_config();
+  load_recent_roms();
 
   setup_callbacks();
   sceImposeSetHomePopup(enable_home_menu ^ 1);
@@ -852,6 +860,7 @@ int user_main(int argc, char *argv[])
       error_msg(MSG[MSG_ERR_LOAD_GAMEPACK], CONFIRMATION_QUIT);
       quit();
     }
+    add_recent_rom(argv[1]);
   }
   else
   {
@@ -867,8 +876,12 @@ int user_main(int argc, char *argv[])
         error_msg(MSG[MSG_ERR_LOAD_GAMEPACK], CONFIRMATION_CONT);
         menu();
       }
+      else
+      {
+        add_recent_rom(load_filename);
+      }
     }
-    else if (load_file(file_ext, load_filename, dir_roms) < 0)
+    else if (load_file(file_ext, load_filename, dir_roms, 1) < 0)
     {
       menu();
     }
@@ -877,6 +890,10 @@ int user_main(int argc, char *argv[])
       clear_screen(COLOR32_BLACK);
       error_msg(MSG[MSG_ERR_LOAD_GAMEPACK], CONFIRMATION_CONT);
       menu();
+    }
+    else
+    {
+      add_recent_rom(load_filename);
     }
   }
 
@@ -933,6 +950,13 @@ void reset_gba(void)
 
 static void psp_sleep_loop(void)
 {
+  if (option_auto_savestate_sleep != 0 &&
+      !sleep_auto_saved && gamepak_filename[0] != '\0')
+  {
+    auto_savestate_sleep();
+    sleep_auto_saved = 1;
+  }
+
   if (FILE_CHECK_VALID(gamepak_file_large))
   {
     s32 i;
@@ -981,6 +1005,9 @@ static int power_callback(int unknown, int powerInfo, void *arg)
 {
   if ((powerInfo & PSP_POWER_CB_SUSPENDING) != 0)
   {
+    /* Only set the flag here — never do filesystem I/O from the
+       power callback thread. Autosave runs on the main thread in
+       psp_sleep_loop / menu_suspend. */
     sleep_flag = 1;
   }
   else
@@ -990,6 +1017,7 @@ static int power_callback(int unknown, int powerInfo, void *arg)
     psp_sound_frequency(SOUND_SAMPLES, SOUND_FREQUENCY);
 
     sleep_flag = 0;
+    sleep_auto_saved = 0;
   }
 
   return 0;

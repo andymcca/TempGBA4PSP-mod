@@ -230,8 +230,11 @@
   // MSG_STATE_MENU_2
   "Indietro",
 
+  // MSG_STATE_MENU_DELETE
+  "Cancella",
+
   // MSG_STATE_MENU_HELP_0
-  FONT_BTN_CIRCLE_GBK ":Esegui   " FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Carica/Salva   " FONT_BTN_CROSS_GBK ":Esci",
+  FONT_BTN_CIRCLE_GBK ":Esegui   " FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":Carica/Salva   " FONT_BTN_TRIANGLE_GBK ":Cancella   " FONT_BTN_CROSS_GBK ":Esci",
 
   // MSG_STATE_MENU_HELP_1
   FONT_BTN_CIRCLE_GBK ":Esplora file   " FONT_L_TRIGGER_GBK ":Tasto scorciatoia   "FONT_BTN_CROSS_GBK ":Esci",
@@ -575,6 +578,12 @@
   // MSG_SAVE_STATE_NO
   "Slot salvataggio rapido: %d",
 
+  // MSG_LOAD_STATE_AUTO
+  "Slot caricamento rapido: AUTO",
+
+  // MSG_SAVE_STATE_AUTO
+  "Slot salvataggio rapido: AUTO",
+
   // MSG_YES_NO
   FONT_BTN_CIRCLE_GBK ":Si   " FONT_BTN_CROSS_GBK ":No",
 
@@ -840,5 +849,29 @@
 
   // MSG_VOL_100
   "100",
+
+  // MSG_AUTO_SAVESTATE_LOAD_PROMPT
+  "Caricare stato di salvataggio automatico?",
+
+  // MSG_LOAD_ROM_AND_STATE
+  "Caricare %s e stato di salvataggio?",
+
+  // MSG_LOAD_STATE_FILE
+  "Caricare file di stato di salvataggio?",
+
+  // MSG_ERR_ROM_NOT_FOUND
+  "File ROM non trovato",
+
+  // MSG_BROWSER_RECENT_GAMES
+  "--- Giochi Recenti ---",
+
+  // MSG_BROWSER_ALL_GAMES
+  "--- Tutti i Giochi ---",
+
+  // MSG_OPTION_MENU_AUTO_SAVESTATE_SLEEP
+  "Auto-save on sleep",
+
+  // MSG_TOOLTIP_AUTO_SAVESTATE_SLEEP
+  "When ON, writes slot AUTO (_auto.svs) on sleep/suspend from the main thread.\nExit and ROM-switch do not auto-save.",
 
 },

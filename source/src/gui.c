@@ -29,7 +29,8 @@ extern u32 option_swap_confirm_buttons;
 #define GPSP_CONFIG_NUM_PRE_WINDOW_END  (19 + GPSP_CONFIG_NUM_GAMEPAD) // 35 words: + slot 18 = HBLANK cap, gamepad 19-34
 #define GPSP_CONFIG_NUM_PRE_VSYNC       (20 + GPSP_CONFIG_NUM_GAMEPAD) // 36 words: slots 18-19 HBLANK win, gamepad 20-35
 #define GPSP_CONFIG_NUM_PRE_SWAP_THEME  (21 + GPSP_CONFIG_NUM_GAMEPAD) // 37 words: slot 20 VSync, gamepad 21-36 (pre swap/theme slots)
-#define GPSP_CONFIG_NUM                 (23 + GPSP_CONFIG_NUM_GAMEPAD) // 39 words: slot 20 PSP VSync, slot 21 swap buttons, slot 22 themes, gamepad 23-38
+#define GPSP_CONFIG_NUM_PRE_AUTOSAVE    (23 + GPSP_CONFIG_NUM_GAMEPAD) // 39 words: through theme, gamepad 23-38
+#define GPSP_CONFIG_NUM                 (24 + GPSP_CONFIG_NUM_GAMEPAD) // 40 words: + slot 23 auto-savestate-on-sleep, gamepad 24-39
 #define GPSP_CONFIG_NUM_LEGACY          (17 + GPSP_CONFIG_NUM_GAMEPAD) // before renderer option
 #define GPSP_GAME_CONFIG_NUM            (7 + 16)
 
@@ -361,6 +362,187 @@ static u16 hsv_to_color15(u32 h, u32 s, u32 v)
     return rgb_to_color15(C8TO5(r), C8TO5(g), C8TO5(b));
 }
 
+/* ------------------------------------------------------------------
+   Recent ROMs management
+   ------------------------------------------------------------------ */
+
+#define MAX_RECENT_ROMS     5
+#define RECENT_CFG_FILENAME "recent.cfg"
+
+typedef struct {
+    char path[MAX_PATH];
+} RecentRomEntry;
+
+static RecentRomEntry recent_roms[MAX_RECENT_ROMS];
+static u32 num_recent_roms = 0;
+
+/* Forward declarations */
+s32 load_file(const char **wildcards, char *result, char *default_dir_name, u32 show_recent);
+void load_recent_roms(void);
+static void save_recent_roms(void);
+void add_recent_rom(const char *filename);
+static void validate_recent_roms(void);
+static u32 is_recent_roms_empty(void);
+
+void load_recent_roms(void)
+{
+    SceUID fd;
+    char path[MAX_PATH];
+    u32 i;
+
+    num_recent_roms = 0;
+    memset(recent_roms, 0, sizeof(recent_roms));
+
+    sprintf(path, "%s%s", main_path, RECENT_CFG_FILENAME);
+
+    FILE_OPEN(fd, path, READ);
+    if (FILE_CHECK_VALID(fd))
+    {
+        u32 count = 0;
+        if (FILE_READ(fd, &count, sizeof(count)) == sizeof(count))
+        {
+            if (count > MAX_RECENT_ROMS)
+                count = MAX_RECENT_ROMS;
+
+            for (i = 0; i < count; i++)
+            {
+                u32 len = 0;
+                if (FILE_READ(fd, &len, sizeof(len)) != sizeof(len))
+                    break;
+                if (len >= MAX_PATH)
+                    break;
+                if (FILE_READ(fd, recent_roms[i].path, len) != (s32)len)
+                    break;
+                recent_roms[i].path[len] = '\0';
+                num_recent_roms++;
+            }
+        }
+        FILE_CLOSE(fd);
+    }
+
+    /* Validate: remove entries pointing to deleted ROMs */
+    validate_recent_roms();
+}
+
+static void save_recent_roms(void)
+{
+    SceUID fd;
+    char path[MAX_PATH];
+    u32 i;
+
+    sprintf(path, "%s%s", main_path, RECENT_CFG_FILENAME);
+
+    scePowerLock(0);
+    FILE_OPEN(fd, path, WRITE);
+    if (FILE_CHECK_VALID(fd))
+    {
+        FILE_WRITE(fd, &num_recent_roms, sizeof(num_recent_roms));
+        for (i = 0; i < num_recent_roms; i++)
+        {
+            u32 len = strlen(recent_roms[i].path);
+            FILE_WRITE(fd, &len, sizeof(len));
+            FILE_WRITE(fd, recent_roms[i].path, len);
+        }
+        FILE_CLOSE(fd);
+    }
+    scePowerUnlock(0);
+}
+
+static void validate_recent_roms(void)
+{
+    u32 i, j;
+    SceIoStat stat;
+
+    for (i = 0; i < num_recent_roms; )
+    {
+        /* Check if file still exists */
+        if (sceIoGetstat(recent_roms[i].path, &stat) < 0 || !FIO_S_ISREG(stat.st_mode))
+        {
+            /* Remove this entry by shifting remaining entries down */
+            for (j = i; j < num_recent_roms - 1; j++)
+            {
+                strcpy(recent_roms[j].path, recent_roms[j + 1].path);
+            }
+            num_recent_roms--;
+            /* Don't increment i, check the new entry at this position */
+        }
+        else
+        {
+            i++;
+        }
+    }
+}
+
+static u32 is_recent_roms_empty(void)
+{
+    return (num_recent_roms == 0);
+}
+
+void add_recent_rom(const char *filename)
+{
+    u32 i;
+    char full_path[MAX_PATH];
+    char *slash;
+    char *basename;
+
+    if (filename == NULL || filename[0] == '\0')
+        return;
+
+    /* Prefer an already-absolute path; otherwise join with cwd (ROM browser
+       chdirs into the folder before returning a basename). Normalize \ to /. */
+    if (filename[0] == '/' || (filename[0] != '\0' && filename[1] == ':'))
+        snprintf(full_path, sizeof(full_path), "%s", filename);
+    else
+    {
+        char current_dir[MAX_PATH];
+        getcwd(current_dir, MAX_PATH);
+        snprintf(full_path, sizeof(full_path), "%s/%s", current_dir, filename);
+    }
+
+    for (slash = full_path; *slash; slash++)
+    {
+        if (*slash == '\\')
+            *slash = '/';
+    }
+
+    /* Collapse duplicate slashes after the drive root */
+    basename = full_path;
+    while ((slash = strstr(basename, "//")) != NULL)
+    {
+        memmove(slash, slash + 1, strlen(slash));
+    }
+
+    /* Ensure list is loaded before mutating so we never wipe recent.cfg */
+    if (num_recent_roms == 0)
+        load_recent_roms();
+
+    /* Check if already in list — if so, remove old entry */
+    for (i = 0; i < num_recent_roms; i++)
+    {
+        if (strcasecmp(recent_roms[i].path, full_path) == 0)
+        {
+            for (; i < num_recent_roms - 1; i++)
+            {
+                strcpy(recent_roms[i].path, recent_roms[i + 1].path);
+            }
+            num_recent_roms--;
+            break;
+        }
+    }
+
+    for (i = (num_recent_roms < MAX_RECENT_ROMS ? num_recent_roms : MAX_RECENT_ROMS - 1); i > 0; i--)
+    {
+        strcpy(recent_roms[i].path, recent_roms[i - 1].path);
+    }
+
+    strcpy(recent_roms[0].path, full_path);
+    if (num_recent_roms < MAX_RECENT_ROMS)
+        num_recent_roms++;
+
+    save_recent_roms();
+}
+
+
 /* Forward declarations for status bar functions */
 static void update_status_string(char *time_str, char *batt_str, u16 *color_batt);
 static void update_status_string_gbk(char *time_str, char *batt_str, u16 *color_batt);
@@ -368,6 +550,14 @@ static void draw_status_bar(void);
 
 /* Forward declaration for color reset */
 void menu_reset_single_color(u32 idx);
+
+/* Forward declarations for theme and color picker */
+void apply_theme(u32 theme);
+void menu_pick_color(void);
+
+/* Forward declarations for savestate slot helpers */
+static u32 action_savestate_slot(u32 slot);
+static u32 action_loadstate_slot(u32 slot);
 
 #define TEXT_TOOLTIP_POS_Y  (210)
 #define MENU_LIST_POS_X     (10) //18 default
@@ -504,6 +694,132 @@ void print_swap_aware(const char *src, u32 x, u32 y, u16 color, u16 bg)
         print_string(buf, x, y, color, bg);
     else
         print_string_gbk(buf, x, y, color, bg);
+}
+
+/* ------------------------------------------------------------------
+   Scrolling text helpers — ping-pong character-stepped
+   ------------------------------------------------------------------ */
+#define SCROLL_SPEED_FRAME  2
+#define SCROLL_EDGE_PAUSE   60
+
+#define SCROLL_MENU_MAX_CHARS   ((SCREEN_IMAGE_POS_X - MENU_LIST_POS_X) / FONTWIDTH)
+#define SCROLL_TITLE_MAX_CHARS  ((PSP_SCREEN_WIDTH - 228) / FONTWIDTH)
+#define SCROLL_FILE_MAX_CHARS   ((DIR_LIST_POS_X - FILE_LIST_POS_X) / FONTWIDTH)
+#define SCROLL_DIR_MAX_CHARS    ((PSP_SCREEN_WIDTH - DIR_LIST_POS_X) / FONTWIDTH)
+
+typedef struct {
+    u32 menu_tick;
+    u32 last_menu_hash;
+    u32 file_tick;
+    u32 last_file_hash;
+    u32 title_tick;
+    u32 last_title_hash;
+} ScrollState;
+
+static ScrollState g_scroll = {0, ~0U, 0, ~0U, 0, ~0U};
+
+static u32 hash_string(const char *s)
+{
+    u32 h = 0;
+    while (*s) {
+        h = h * 31 + (u8)*s++;
+    }
+    return h;
+}
+
+static s32 compute_scroll_offset(u32 tick, u32 str_len, u32 max_chars)
+{
+    if (str_len <= max_chars)
+        return 0;
+
+    u32 scroll_len = str_len - max_chars;
+    u32 half_cycle = SCROLL_EDGE_PAUSE + (scroll_len * SCROLL_SPEED_FRAME);
+    u32 full_cycle = half_cycle * 2;
+    u32 t = tick % full_cycle;
+
+    if (t < SCROLL_EDGE_PAUSE)
+        return 0;
+    t -= SCROLL_EDGE_PAUSE;
+    if (t < scroll_len * SCROLL_SPEED_FRAME)
+        return (s32)(t / SCROLL_SPEED_FRAME);
+    t -= scroll_len * SCROLL_SPEED_FRAME;
+    if (t < SCROLL_EDGE_PAUSE)
+        return (s32)scroll_len;
+    t -= SCROLL_EDGE_PAUSE;
+    return (s32)(scroll_len - (t / SCROLL_SPEED_FRAME));
+}
+
+static void update_menu_scroll(u32 hash)
+{
+    if (hash != g_scroll.last_menu_hash) {
+        g_scroll.last_menu_hash = hash;
+        g_scroll.menu_tick = 0;
+    } else {
+        g_scroll.menu_tick++;
+    }
+}
+
+static void update_file_scroll(u32 hash)
+{
+    if (hash != g_scroll.last_file_hash) {
+        g_scroll.last_file_hash = hash;
+        g_scroll.file_tick = 0;
+    } else {
+        g_scroll.file_tick++;
+    }
+}
+
+static void update_title_scroll(u32 hash)
+{
+    if (hash != g_scroll.last_title_hash) {
+        g_scroll.last_title_hash = hash;
+        g_scroll.title_tick = 0;
+    } else {
+        g_scroll.title_tick++;
+    }
+}
+
+static void print_string_scroll(const char *str, u32 x, u32 y, u16 color, u16 bg, u32 max_chars, s32 scroll_offset)
+{
+    u32 len = strlen(str);
+    if (len == 0) return;
+
+    if (len <= max_chars) {
+        print_string(str, x, y, color, bg);
+        return;
+    }
+
+    u32 start = (u32)scroll_offset;
+    if (start >= len) start = len - 1;
+    u32 clip_len = len - start;
+    if (clip_len > max_chars) clip_len = max_chars;
+    if (clip_len >= 256) clip_len = 255;
+
+    char buf[256];
+    memcpy(buf, str + start, clip_len);
+    buf[clip_len] = '\0';
+
+    print_string(buf, x, y, color, bg);
+}
+
+/* Clip any string to max_chars width — used for non-selected items */
+static void print_string_clipped(const char *str, u32 x, u32 y, u16 color, u16 bg, u32 max_chars)
+{
+    u32 len = strlen(str);
+    if (len == 0) return;
+
+    if (len <= max_chars) {
+        print_string(str, x, y, color, bg);
+        return;
+    }
+
+    if (max_chars >= 256) max_chars = 255;
+
+    char buf[256];
+    memcpy(buf, str, max_chars);
+    buf[max_chars] = '\0';
+
+    print_string(buf, x, y, color, bg);
 }
 
 static void draw_color_picker(u32 h, u32 s, u32 v, s32 cx, s32 cy, s32 hue_seg,
@@ -1136,7 +1452,7 @@ static int sort_function(const void *dest_str_ptr, const void *src_str_ptr)
   return strcmp(dest_str, src_str);
 }
 
-s32 load_file(const char **wildcards, char *result, char *default_dir_name)
+s32 load_file(const char **wildcards, char *result, char *default_dir_name, u32 show_recent)
 {
   char current_dir_name[MAX_PATH];
   char current_dir_short[81];
@@ -1166,6 +1482,11 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name)
   u32 i;
   s32 return_value = 1;
   s32 repeat;
+
+  /* Recent ROMs browser state */
+  u32 in_recent_section = 0;
+  u32 recent_selection = 0;
+  u32 file_list_y_offset = 0;
 
   GUI_ACTION_TYPE gui_action;
 
@@ -1213,6 +1534,11 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name)
   {
     chdir(default_dir_name);
   }
+
+  /* Load recent ROMs only for the ROM browser. Non-ROM browsers must not
+     clear the in-memory list (that would risk wiping recent.cfg later). */
+  if (show_recent)
+    load_recent_roms();
 
   /* File browser is not the main menu; disable OS exit dialog here */
   sceImposeSetHomePopup(0);
@@ -1338,6 +1664,13 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name)
     while (repeat)
     {
       clear_screen(COLOR15_TO_32(color_bg));
+
+      /* Update file browser scroll state */
+      {
+          u32 file_hash = (column << 24) ^ selection[column];
+          update_file_scroll(file_hash);
+      }
+
 		if (option_language == 0)
 			print_string(current_dir_short, 6, 2, color_help_text, BG_NO_FILL);
 		else
@@ -1360,7 +1693,7 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name)
 	  else
 		print_string_gbk(batt_str, BATT_STATUS_POS_X, 2, color_batt_life, BG_NO_FILL);
 
-		print_swap_aware(MSG[MSG_BROWSER_HELP], 30, 258, color_help_text, BG_NO_FILL);
+        print_swap_aware(MSG[MSG_BROWSER_HELP], 30, 258, color_help_text, BG_NO_FILL);
 
       char str_buffer_size[32];
       sprintf(str_buffer_size, MSG[MSG_BUFFER], gamepak_ram_buffer_size >> 20);
@@ -1373,47 +1706,134 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name)
       if (get_pad_input(PSP_CTRL_HOLD) != 0)
 		{
 		if (option_language == 0)
-			print_string(FONT_KEY_ICON_GBK, 6, 258, COLOR15_YELLOW, BG_NO_FILL);
+			print_string(FONT_KEY_ICON_GBK, 6, 258, color_batt_low, BG_NO_FILL);
 		else
-			print_string_gbk(FONT_KEY_ICON, 6, 258, COLOR15_YELLOW, BG_NO_FILL);
+			print_string_gbk(FONT_KEY_ICON, 6, 258, color_batt_low, BG_NO_FILL);
 		}
-      // draw scroll bar
-      if (num[FILE_LIST] > FILE_LIST_ROWS)
+      /* Compute visible rows before drawing scroll bar */
+      u32 file_list_visible_rows = FILE_LIST_ROWS;
+      if (show_recent && !is_recent_roms_empty())
       {
-        draw_box_line(SBAR_X1,  SBAR_Y1,  SBAR_X2,  SBAR_Y2,  color_scroll_bar);
-        draw_box_fill(SBAR_X1I, SBAR_Y1I, SBAR_X2I, SBAR_Y2I, color_scroll_bar);
+          file_list_visible_rows = FILE_LIST_ROWS - (num_recent_roms + 2);
+          if (file_list_visible_rows < 5)
+              file_list_visible_rows = 5;
       }
 
-      for (i = 0; i < FILE_LIST_ROWS; i++)
+      // draw scroll bar
+      if (num[FILE_LIST] > file_list_visible_rows)
+      {
+        u32 sbar_top, sbar_bottom, sbar_t, sbar_b, sbar_h;
+        u32 sbar_y1i, sbar_y2i;
+
+        if (!show_recent || is_recent_roms_empty())
+        {
+          sbar_top    = SBAR_Y1;
+          sbar_bottom = SBAR_Y2;
+        }
+        else
+        {
+          sbar_top    = FILE_LIST_POS_Y + file_list_y_offset;
+          sbar_bottom = sbar_top + file_list_visible_rows * FONTHEIGHT;
+        }
+
+        sbar_t   = sbar_top + 2;
+        sbar_b   = sbar_bottom - 2;
+        sbar_h   = sbar_b - sbar_t;
+        sbar_y1i = sbar_h * scroll_value[FILE_LIST] / num[FILE_LIST] + sbar_t;
+        sbar_y2i = sbar_h * (scroll_value[FILE_LIST] + file_list_visible_rows) / num[FILE_LIST] + sbar_t;
+
+        draw_box_line(SBAR_X1,  sbar_top,    SBAR_X2,  sbar_bottom, color_scroll_bar);
+        draw_box_fill(SBAR_X1I, sbar_y1i,    SBAR_X2I, sbar_y2i,    color_scroll_bar);
+      }
+
+      /* --- Recent Games Section --- */
+      file_list_y_offset = 0;
+      if (show_recent && !is_recent_roms_empty())
+      {
+        u32 recent_y = FILE_LIST_POS_Y;
+        u16 header_color = color_help_text;
+
+        /* Header */
+        if (option_language == 0)
+          print_string(MSG[MSG_BROWSER_RECENT_GAMES], FILE_LIST_POS_X, recent_y, header_color, BG_NO_FILL);
+        else
+          print_string_gbk(MSG[MSG_BROWSER_RECENT_GAMES], FILE_LIST_POS_X, recent_y, header_color, BG_NO_FILL);
+        recent_y += FONTHEIGHT;
+
+        /* Recent ROM entries */
+        for (i = 0; i < num_recent_roms; i++)
+        {
+          const char *rom_name = strrchr(recent_roms[i].path, '/');
+          if (rom_name == NULL)
+            rom_name = recent_roms[i].path;
+          else
+            rom_name++;
+
+          u16 line_color;
+          if (in_recent_section && i == recent_selection)
+          {
+            line_color = color_active_item;
+            s32 off = compute_scroll_offset(g_scroll.file_tick, strlen(rom_name), SCROLL_FILE_MAX_CHARS);
+            print_string_scroll(rom_name, FILE_LIST_POS_X, recent_y, line_color, BG_NO_FILL, SCROLL_FILE_MAX_CHARS, off);
+          }
+          else
+          {
+            line_color = color_inactive_item;
+            print_string_clipped(rom_name, FILE_LIST_POS_X, recent_y, line_color, BG_NO_FILL, SCROLL_FILE_MAX_CHARS);
+          }
+          recent_y += FONTHEIGHT;
+        }
+
+        /* Separator */
+        if (option_language == 0)
+          print_string(MSG[MSG_BROWSER_ALL_GAMES], FILE_LIST_POS_X, recent_y, header_color, BG_NO_FILL);
+        else
+          print_string_gbk(MSG[MSG_BROWSER_ALL_GAMES], FILE_LIST_POS_X, recent_y, header_color, BG_NO_FILL);
+
+        file_list_y_offset = (num_recent_roms + 2) * FONTHEIGHT;
+      }
+
+      /* --- Normal File List --- */
+      for (i = 0; i < file_list_visible_rows; i++)
       {
         current_file_number = i + scroll_value[FILE_LIST];
 
         if (current_file_number < num[FILE_LIST])
         {
-          if ((current_file_number == selection[FILE_LIST]) && (column == FILE_LIST))
+          u32 is_selected = ((current_file_number == selection[FILE_LIST]) && (column == FILE_LIST) && !in_recent_section);
+          if (is_selected)
             current_line_color = color_active_item;
           else
             current_line_color = color_inactive_item;
 
-          print_string(file_list[current_file_number], FILE_LIST_POS_X, FILE_LIST_POS_Y + (i * FONTHEIGHT), current_line_color, BG_NO_FILL);
+          if (is_selected) {
+              s32 off = compute_scroll_offset(g_scroll.file_tick, strlen(file_list[current_file_number]), SCROLL_FILE_MAX_CHARS);
+              print_string_scroll(file_list[current_file_number], FILE_LIST_POS_X, FILE_LIST_POS_Y + file_list_y_offset + (i * FONTHEIGHT), current_line_color, BG_NO_FILL, SCROLL_FILE_MAX_CHARS, off);
+          } else {
+              print_string_clipped(file_list[current_file_number], FILE_LIST_POS_X, FILE_LIST_POS_Y + file_list_y_offset + (i * FONTHEIGHT), current_line_color, BG_NO_FILL, SCROLL_FILE_MAX_CHARS);
+          }
         }
       }
-
       for (i = 0; i < FILE_LIST_ROWS; i++)
       {
         current_dir_number = i + scroll_value[DIR_LIST];
 
         if (current_dir_number < num[DIR_LIST])
         {
-          if ((current_dir_number == selection[DIR_LIST]) && (column == DIR_LIST))
+          u32 is_selected = ((current_dir_number == selection[DIR_LIST]) && (column == DIR_LIST));
+          if (is_selected)
             current_line_color = color_active_item;
           else
             current_line_color = color_inactive_dir;
 
-          print_string(dir_list[current_dir_number], DIR_LIST_POS_X, FILE_LIST_POS_Y + (i * FONTHEIGHT), current_line_color, color_bg);
+          if (is_selected) {
+              s32 off = compute_scroll_offset(g_scroll.file_tick, strlen(dir_list[current_dir_number]), SCROLL_DIR_MAX_CHARS);
+              print_string_scroll(dir_list[current_dir_number], DIR_LIST_POS_X, FILE_LIST_POS_Y + (i * FONTHEIGHT), current_line_color, color_bg, SCROLL_DIR_MAX_CHARS, off);
+          } else {
+              print_string_clipped(dir_list[current_dir_number], DIR_LIST_POS_X, FILE_LIST_POS_Y + (i * FONTHEIGHT), current_line_color, color_bg, SCROLL_DIR_MAX_CHARS);
+          }
         }
       }
-
       if (num[DIR_LIST] > FILE_LIST_ROWS)
       {
         if (scroll_value[DIR_LIST] != 0)
@@ -1429,17 +1849,53 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name)
 
       gui_action = get_gui_input();
 
+      /* Per-column visible rows: FILE_LIST shrinks when recent games shown */
+      u32 visible_rows[2];
+      visible_rows[FILE_LIST] = file_list_visible_rows;
+      visible_rows[DIR_LIST]  = FILE_LIST_ROWS;
+
       switch (gui_action)
       {
         case CURSOR_DOWN:
-          if (selection[column] < (num[column] - 1))
+          if (in_recent_section)
           {
-            selection[column]++;
-
-            if (in_scroll[column] == (FILE_LIST_ROWS - 1))
-              scroll_value[column]++;
+            if (recent_selection < num_recent_roms - 1)
+            {
+              recent_selection++;
+            }
             else
-              in_scroll[column]++;
+            {
+              /* Move from recent section to file list */
+              in_recent_section = 0;
+              column = FILE_LIST;
+              selection[FILE_LIST] = 0;
+              scroll_value[FILE_LIST] = 0;
+              in_scroll[FILE_LIST] = 0;
+            }
+          }
+          else if (column == FILE_LIST)
+          {
+            if (selection[FILE_LIST] < (num[FILE_LIST] - 1))
+            {
+              selection[FILE_LIST]++;
+
+              if (in_scroll[FILE_LIST] == (visible_rows[FILE_LIST] - 1))
+                scroll_value[FILE_LIST]++;
+              else
+                in_scroll[FILE_LIST]++;
+            }
+          }
+          else /* DIR_LIST */
+          {
+            if (selection[column] < (num[column] - 1))
+            {
+              selection[column]++;
+
+              if (in_scroll[column] == (FILE_LIST_ROWS - 1))
+                scroll_value[column]++;
+              else
+                in_scroll[column]++;
+            }
           }
           break;
 
@@ -1450,11 +1906,11 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name)
             {
               selection[column] += PAGE_SCROLL_NUM;
 
-              if (in_scroll[column] >= (FILE_LIST_ROWS - PAGE_SCROLL_NUM))
+              if (in_scroll[column] >= (file_list_visible_rows - PAGE_SCROLL_NUM))
               {
                 scroll_value[column] += PAGE_SCROLL_NUM;
 
-                if (scroll_value[column] > (num[column] - FILE_LIST_ROWS))
+                if (scroll_value[column] > (num[column] - file_list_visible_rows))
                 {
                   scroll_value[column] = num[column] - FILE_LIST_ROWS;
                   in_scroll[column] = selection[column] - scroll_value[column];
@@ -1470,12 +1926,12 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name)
               selection[column] = num[column] - 1;
               in_scroll[column] += PAGE_SCROLL_NUM;
 
-              if (in_scroll[column] >= (FILE_LIST_ROWS - 1))
+              if (in_scroll[column] >= (file_list_visible_rows - 1))
               {
-                if (num[column] > (FILE_LIST_ROWS - 1))
+                if (num[column] > (file_list_visible_rows - 1))
                 {
-                  in_scroll[column] = FILE_LIST_ROWS - 1;
-                  scroll_value[column] = num[column] - FILE_LIST_ROWS;
+                  in_scroll[column] = file_list_visible_rows - 1;
+                  scroll_value[column] = num[column] - file_list_visible_rows;
                 }
                 else
                 {
@@ -1492,14 +1948,40 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name)
           break;
 
         case CURSOR_UP:
-          if (selection[column] != 0)
+          if (!in_recent_section && column == FILE_LIST && selection[FILE_LIST] == 0 && show_recent && !is_recent_roms_empty())
           {
-            selection[column]--;
+            /* Move from file list to recent section */
+            in_recent_section = 1;
+            recent_selection = num_recent_roms - 1;
+          }
+          else if (in_recent_section)
+          {
+            if (recent_selection > 0)
+              recent_selection--;
+          }
+          else if (column == FILE_LIST)
+          {
+            if (selection[FILE_LIST] != 0)
+            {
+              selection[FILE_LIST]--;
 
-            if (in_scroll[column] == 0)
-              scroll_value[column]--;
-            else
-              in_scroll[column]--;
+              if (in_scroll[FILE_LIST] == 0)
+                scroll_value[FILE_LIST]--;
+              else
+                in_scroll[FILE_LIST]--;
+            }
+          }
+          else /* DIR_LIST */
+          {
+            if (selection[column] != 0)
+            {
+              selection[column]--;
+
+              if (in_scroll[column] == 0)
+                scroll_value[column]--;
+              else
+                in_scroll[column]--;
+            }
           }
           break;
 
@@ -1550,7 +2032,29 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name)
           break;
 
         case CURSOR_SELECT:
-          if (column == DIR_LIST)
+          if (in_recent_section)
+          {
+            /* Load selected recent ROM */
+            char *recent_path = recent_roms[recent_selection].path;
+            char *last_slash = strrchr(recent_path, '/');
+
+            if (last_slash != NULL)
+            {
+              size_t dir_len = last_slash - recent_path;
+              char recent_dir[MAX_PATH];
+              memcpy(recent_dir, recent_path, dir_len);
+              recent_dir[dir_len] = '\0';
+              chdir(recent_dir);
+              strcpy(result, last_slash + 1);
+            }
+            else
+            {
+              strcpy(result, recent_path);
+            }
+            repeat = 0;
+            return_value = 0;
+          }
+          else if (column == DIR_LIST)
           {
             repeat = 0;
             chdir(dir_list[selection[DIR_LIST]]);
@@ -1649,10 +2153,34 @@ static void get_savestate_info(char *filename, u16 *snapshot, char *timestamp)
 
 static void get_savestate_filename(u32 slot, char *name_buffer)
 {
-  char savestate_ext[16];
+  if (slot == 10)
+    change_ext(gamepak_filename, name_buffer, "_auto.svs");
+  else
+  {
+    char savestate_ext[16];
+    sprintf(savestate_ext, "_%d.svs", (int)slot);
+    change_ext(gamepak_filename, name_buffer, savestate_ext);
+  }
+}
 
-  sprintf(savestate_ext, "_%d.svs", (int)slot);
-  change_ext(gamepak_filename, name_buffer, savestate_ext);
+void auto_savestate_sleep(void)
+{
+    if (option_auto_savestate_sleep == 0)
+        return;
+    if (gamepak_filename[0] == '\0')
+        return;
+    action_savestate_slot(10);
+}
+
+static u32 savestate_file_exists(u32 slot)
+{
+    char savestate_filename[MAX_FILE];
+    char savestate_path[MAX_PATH];
+    SceIoStat stat;
+
+    get_savestate_filename(slot, savestate_filename);
+    snprintf(savestate_path, sizeof(savestate_path), "%s%s", dir_state, savestate_filename);
+    return (sceIoGetstat(savestate_path, &stat) >= 0);
 }
 
 
@@ -1677,6 +2205,57 @@ u32 action_savestate(void)
 
   free(current_screen);
   return result;
+}
+
+/* Save/load to a specific slot without disturbing the global savestate_slot */
+static u32 action_savestate_slot(u32 slot)
+{
+  char savestate_filename[MAX_FILE];
+  u16 *current_screen;
+  u32 result;
+  u32 old_slot = savestate_slot;
+
+  savestate_slot = slot;
+  current_screen = copy_screen();
+  get_savestate_filename(savestate_slot, savestate_filename);
+  result = save_state_silent(savestate_filename, current_screen);
+  free(current_screen);
+  savestate_slot = old_slot;
+  return result;
+}
+
+static u32 action_loadstate_slot(u32 slot)
+{
+  char savestate_filename[MAX_FILE];
+  u32 result;
+  u32 old_slot = savestate_slot;
+
+  savestate_slot = slot;
+  get_savestate_filename(savestate_slot, savestate_filename);
+  result = load_state_silent(savestate_filename);
+  savestate_slot = old_slot;
+  return result;
+}
+
+static u32 auto_savestate_exists(void)
+{
+  char savestate_filename[MAX_FILE];
+  char savestate_path[MAX_PATH];
+  SceUID fd;
+  u32 old_slot = savestate_slot;
+
+  savestate_slot = 10;
+  get_savestate_filename(10, savestate_filename);
+  snprintf(savestate_path, sizeof(savestate_path), "%s%s", dir_state, savestate_filename);
+  FILE_OPEN(fd, savestate_path, READ);
+  savestate_slot = old_slot;
+
+  if (FILE_CHECK_VALID(fd))
+  {
+    FILE_CLOSE(fd);
+    return 1;
+  }
+  return 0;
 }
 
 static u32 ram_dynarec_policy_menu_prev = ~(u32)0;
@@ -1745,6 +2324,58 @@ static void print_menu_line(const char *str, s16 x, s16 y, u16 fg, s16 bg)
         print_string_gbk(str, x, y, fg, bg);
 }
 
+static void print_menu_line_scroll(const char *str, s16 x, s16 y, u16 fg, s16 bg, u32 max_chars, s32 scroll_offset)
+{
+    if (menu_string_has_gbk(str)) {
+        print_menu_line(str, x, y, fg, bg);
+        return;
+    }
+
+    u32 len = strlen(str);
+    if (len == 0) return;
+
+    if (len <= max_chars) {
+        print_menu_line(str, x, y, fg, bg);
+        return;
+    }
+
+    u32 start = (u32)scroll_offset;
+    if (start >= len) start = len - 1;
+    u32 clip_len = len - start;
+    if (clip_len > max_chars) clip_len = max_chars;
+    if (clip_len >= 256) clip_len = 255;
+
+    char buf[256];
+    memcpy(buf, str + start, clip_len);
+    buf[clip_len] = '\0';
+
+    print_menu_line(buf, x, y, fg, bg);
+}
+
+static void print_menu_line_clipped(const char *str, s16 x, s16 y, u16 fg, s16 bg, u32 max_chars)
+{
+    if (menu_string_has_gbk(str)) {
+        print_menu_line(str, x, y, fg, bg);
+        return;
+    }
+
+    u32 len = strlen(str);
+    if (len == 0) return;
+
+    if (len <= max_chars) {
+        print_menu_line(str, x, y, fg, bg);
+        return;
+    }
+
+    if (max_chars >= 256) max_chars = 255;
+
+    char buf[256];
+    memcpy(buf, str, max_chars);
+    buf[max_chars] = '\0';
+
+    print_menu_line(buf, x, y, fg, bg);
+}
+
 static void format_menu_option_line(char *dst, u32 dst_size, const MenuOptionType *opt)
 {
     const char *fmt;
@@ -1797,6 +2428,103 @@ static void format_menu_option_line(char *dst, u32 dst_size, const MenuOptionTyp
     dst[dst_size - 1] = '\0';
 }
 
+/* Print a menu option by splitting the format string at %s or %d.
+   Label is printed fixed. Value is printed with scroll/clip.
+   This avoids format_menu_option_line() which merges them into one string. */
+static void print_menu_option_split(const MenuOptionType *opt, s16 x, s16 y, u16 fg, u16 bg, u32 max_chars, s32 scroll_offset)
+{
+    const char *fmt = opt->display_string;
+    if (fmt == NULL) return;
+
+    /* Check for %s or %d in format string */
+    const char *spec_s = strstr(fmt, "%s");
+    const char *spec_d = strstr(fmt, "%d");
+    const char *spec = NULL;
+    u32 is_numeric = 0;
+
+    if (spec_s != NULL && spec_d != NULL) {
+        /* Both present — use the first one */
+        spec = (spec_s < spec_d) ? spec_s : spec_d;
+        is_numeric = (spec_d < spec_s) ? 1 : 0;
+    } else if (spec_s != NULL) {
+        spec = spec_s;
+        is_numeric = 0;
+    } else if (spec_d != NULL) {
+        spec = spec_d;
+        is_numeric = 1;
+    } else {
+        /* No %s or %d — scroll/clip whole string */
+        if (scroll_offset >= 0) {
+            print_menu_line_scroll(fmt, x, y, fg, bg, max_chars, scroll_offset);
+        } else {
+            print_menu_line_clipped(fmt, x, y, fg, bg, max_chars);
+        }
+        return;
+    }
+
+    /* Print label (before %s or %d) */
+    u32 prefix_len = (u32)(spec - fmt);
+    if (prefix_len >= 256) prefix_len = 255;
+
+    char label_buf[256];
+    memcpy(label_buf, fmt, prefix_len);
+    label_buf[prefix_len] = '\0';
+
+    print_menu_line(label_buf, x, y, fg, bg);
+
+    /* Calculate value position */
+    u32 label_width = prefix_len * FONTWIDTH;
+    s16 value_x = x + (s16)label_width;
+
+    /* Get value string */
+    char value_buf[32];
+    const char *value = "";
+    u32 value_len = 0;
+
+    if (is_numeric) {
+        /* %d — format the numeric value */
+        sprintf(value_buf, "%d", *(opt->current_option));
+        value = value_buf;
+        value_len = strlen(value);
+    } else {
+        /* %s — look up in choice array */
+        const char **choices = (const char **)opt->options;
+        u32 idx = *(opt->current_option);
+        if (choices != NULL && idx < opt->num_options && choices[idx] != NULL) {
+            value = choices[idx];
+            value_len = strlen(value);
+        }
+    }
+
+    u32 value_max = (max_chars > prefix_len) ? (max_chars - prefix_len) : 0;
+    if (value_max == 0) return;
+
+    if (value_len <= value_max) {
+        /* Value fits — print normally */
+        print_menu_line(value, value_x, y, fg, bg);
+    } else if (scroll_offset >= 0) {
+        /* Value scrolls */
+        u32 start = (u32)scroll_offset;
+        if (start >= value_len) start = value_len - 1;
+        u32 clip_len = value_len - start;
+        if (clip_len > value_max) clip_len = value_max;
+        if (clip_len >= 256) clip_len = 255;
+
+        char val_clip[256];
+        memcpy(val_clip, value + start, clip_len);
+        val_clip[clip_len] = '\0';
+        print_menu_line(val_clip, value_x, y, fg, bg);
+    } else {
+        /* Value clipped (not selected) */
+        u32 clip = value_max;
+        if (clip >= 256) clip = 255;
+        char val_clip[256];
+        memcpy(val_clip, value, clip);
+        val_clip[clip] = '\0';
+        print_menu_line(val_clip, value_x, y, fg, bg);
+    }
+}
+
 static void menu_refresh_language(void)
 {
     u32 i, j;
@@ -1837,7 +2565,7 @@ u32 menu(void)
   u16 *savestate_screen = NULL;
 
   u32 savestate_action = 0;
-  static char savestate_timestamps[10][40];
+  static char savestate_timestamps[11][40];
 
   char time_str[40];
   char batt_str[40];
@@ -1877,6 +2605,7 @@ u32 menu(void)
   auto u32 menu_save_state(void);
   auto u32 menu_load_state(void);
   auto void menu_load_state_file(void);
+  auto void menu_delete_state(void);
 
 //  auto void menu_default(void);
   auto void menu_load_cheat_file(void);
@@ -1941,7 +2670,11 @@ u32 menu(void)
     save_game_config_file();
 
     if (!first_load)
+    {
       update_backup_immediately();
+      /* Sleep/suspend autosave only — gated inside auto_savestate_sleep() */
+      auto_savestate_sleep();
+    }
 
     scePowerTick(0);
     scePowerRequestSuspend();
@@ -1954,9 +2687,12 @@ u32 menu(void)
     save_game_config_file();
 
     if (!first_load)
+    {
       update_backup_immediately();
+      /* Do not silently overwrite _auto.svs on ROM switch (opt-in later). */
+    }
 
-    if (load_file(file_ext, filename_buffer, dir_roms) == 0)
+    if (load_file(file_ext, filename_buffer, dir_roms, 1) == 0)
     {
       if (load_gamepak(filename_buffer) < 0)
       {
@@ -1974,6 +2710,18 @@ u32 menu(void)
 
       reset_gba();
       reg[CHANGED_PC_STATUS] = 1;
+
+      /* Add to recent ROMs list */
+      add_recent_rom(filename_buffer);
+
+      /* Prompt to load auto-savestate for the newly loaded game */
+      if (auto_savestate_exists())
+      {
+        if (yesno_dialog(MSG[MSG_AUTO_SAVESTATE_LOAD_PROMPT]) == 0)
+        {
+          action_loadstate_slot(10);
+        }
+      }
 
       return_value = 1;
       repeat = 0;
@@ -2025,7 +2773,10 @@ u32 menu(void)
   {
     get_savestate_filename(savestate_slot, filename_buffer);
     get_savestate_info(filename_buffer, savestate_screen, line_buffer);
-    sprintf(savestate_timestamps[savestate_slot], "%d: %s", (int)savestate_slot, line_buffer);
+    if (savestate_slot == 10)
+      sprintf(savestate_timestamps[savestate_slot], "AUTO: %s", line_buffer);
+    else
+      sprintf(savestate_timestamps[savestate_slot], "%d: %s", (int)savestate_slot, line_buffer);
 
     screen_image_ptr = savestate_screen;
   }
@@ -2040,7 +2791,10 @@ u32 menu(void)
       return 0;
 
     get_savestate_info(filename_buffer, savestate_screen, line_buffer);
-    sprintf(savestate_timestamps[savestate_slot], "%d: %s", (int)savestate_slot, line_buffer);
+    if (savestate_slot == 10)
+      sprintf(savestate_timestamps[savestate_slot], "AUTO: %s", line_buffer);
+    else
+      sprintf(savestate_timestamps[savestate_slot], "%d: %s", (int)savestate_slot, line_buffer);
     return 1;
   }
 
@@ -2056,20 +2810,244 @@ u32 menu(void)
   void menu_load_state_file(void)
   {
     const char *file_ext[] = { ".svs", NULL };
+    char rom_name[MAX_FILE];
+    char rom_path[MAX_PATH];
+    char dialog_msg[128];
+    u32 same_rom = 0;
+    u32 slot_parsed = 0;
+    u32 file_browser_repeat = 1;
 
-    if ((load_file(file_ext, filename_buffer, dir_state) == 0) && !first_load)
+    while (file_browser_repeat)
     {
-      if (load_state(filename_buffer) != 0)
+      file_browser_repeat = 0;
+      same_rom = 0;
+      slot_parsed = 0;
+
+      if (load_file(file_ext, filename_buffer, dir_state, 0) == 0)
       {
-        return_value = 1;
-        repeat = 0;
+        /* Extract ROM base name from savestate filename using a trailing
+           _(auto|<digits>).svs suffix only (ROM names may contain '_'). */
+        {
+            char temp_name[MAX_FILE];
+            char *suffix;
+            u32 name_len;
+
+            strncpy(temp_name, filename_buffer, sizeof(temp_name) - 1);
+            temp_name[sizeof(temp_name) - 1] = '\0';
+            name_len = strlen(temp_name);
+            rom_name[0] = '\0';
+            slot_parsed = 0;
+
+            if (name_len > 9 && strcasecmp(temp_name + name_len - 9, "_auto.svs") == 0)
+            {
+                temp_name[name_len - 9] = '\0';
+                strncpy(rom_name, temp_name, sizeof(rom_name) - 1);
+                rom_name[sizeof(rom_name) - 1] = '\0';
+                slot_parsed = 10;
+            }
+            else if (name_len > 5 && strcasecmp(temp_name + name_len - 4, ".svs") == 0)
+            {
+                temp_name[name_len - 4] = '\0';
+                suffix = strrchr(temp_name, '_');
+                if (suffix != NULL && suffix[1] != '\0')
+                {
+                    char *p = suffix + 1;
+                    u32 all_digits = 1;
+                    while (*p)
+                    {
+                        if (*p < '0' || *p > '9')
+                        {
+                            all_digits = 0;
+                            break;
+                        }
+                        p++;
+                    }
+                    if (all_digits)
+                    {
+                        slot_parsed = (u32)atoi(suffix + 1);
+                        *suffix = '\0';
+                        strncpy(rom_name, temp_name, sizeof(rom_name) - 1);
+                        rom_name[sizeof(rom_name) - 1] = '\0';
+                    }
+                }
+                if (rom_name[0] == '\0')
+                {
+                    strncpy(rom_name, temp_name, sizeof(rom_name) - 1);
+                    rom_name[sizeof(rom_name) - 1] = '\0';
+                }
+            }
+            else
+            {
+                strncpy(rom_name, temp_name, sizeof(rom_name) - 1);
+                rom_name[sizeof(rom_name) - 1] = '\0';
+            }
+        }
+
+        /* Check if this savestate belongs to the currently running ROM */
+        if (!first_load && gamepak_filename[0] != '\0')
+        {
+            char current_base[MAX_FILE];
+            change_ext(gamepak_filename, current_base, "");
+            if (strcasecmp(current_base, rom_name) == 0)
+                same_rom = 1;
+        }
+
+        if (same_rom)
+        {
+            /* Scenario 3: Same ROM — just load the savestate */
+            savestate_slot = slot_parsed;
+            snprintf(dialog_msg, sizeof(dialog_msg), "%s",
+                     MSG[MSG_LOAD_STATE_FILE]);
+            if (yesno_dialog(dialog_msg) == 0)
+            {
+                if (load_state_silent(filename_buffer) != 0)
+                {
+                    return_value = 1;
+                    repeat = 0;
+                }
+            }
+            else
+            {
+                /* Cancelled — reopen file browser */
+                file_browser_repeat = 1;
+            }
+        }
+        else
+        {
+            /* Scenario 1 or 2: Different ROM or no ROM running */
+            char display_name[36];
+            if (strlen(rom_name) > 30)
+            {
+                strncpy(display_name, rom_name, 27);
+                display_name[27] = '\0';
+                strcat(display_name, "...");
+            }
+            else
+            {
+                strcpy(display_name, rom_name);
+            }
+            snprintf(dialog_msg, sizeof(dialog_msg),
+                     MSG[MSG_LOAD_ROM_AND_STATE], display_name);
+            if (yesno_dialog(dialog_msg) == 0)
+            {
+                if (!first_load)
+                {
+                    save_game_config_file();
+                    update_backup_immediately();
+                }
+
+                /* Try to find and load the ROM file */
+                {
+                    const char *rom_exts[] = { ".gba", ".zip", ".bin", ".agb", ".gbz", NULL };
+                    u32 rom_found = 0;
+                    u32 ext_i;
+                    char rom_file[MAX_FILE];
+
+                    for (ext_i = 0; rom_exts[ext_i] != NULL; ext_i++)
+                    {
+                        /* Check existence with full path */
+                        snprintf(rom_path, sizeof(rom_path), "%s%s%s",
+                                 dir_roms, rom_name, rom_exts[ext_i]);
+                        SceIoStat stat;
+                        if (sceIoGetstat(rom_path, &stat) >= 0)
+                        {
+                            rom_found = 1;
+                            /* load_gamepak() expects bare filename, not full path */
+                            snprintf(rom_file, sizeof(rom_file), "%s%s",
+                                     rom_name, rom_exts[ext_i]);
+                            break;
+                        }
+                    }
+
+                    if (!rom_found)
+                    {
+                        error_msg(MSG[MSG_ERR_ROM_NOT_FOUND], CONFIRMATION_CONT);
+                        /* Reopen file browser after error */
+                        file_browser_repeat = 1;
+                        continue;
+                    }
+
+                    /* load_file(dir_state) changed CWD to savestate dir;
+                       load_gamepak() needs CWD to be the ROM directory */
+                    chdir(dir_roms);
+
+                    if (load_gamepak(rom_file) < 0)
+                    {
+                        clear_screen(COLOR32_BLACK);
+                        error_msg(MSG[MSG_ERR_LOAD_GAMEPACK], CONFIRMATION_CONT);
+                        gamepak_file_none();
+                        /* Reopen file browser after error */
+                        file_browser_repeat = 1;
+                        continue;
+                    }
+
+                    reset_gba();
+                    reg[CHANGED_PC_STATUS] = 1;
+                }
+
+                /* Load the selected savestate */
+                savestate_slot = slot_parsed;
+                if (load_state_silent(filename_buffer) != 0)
+                {
+                    return_value = 1;
+                    repeat = 0;
+                }
+            }
+            else
+            {
+                /* Cancelled — reopen file browser */
+                file_browser_repeat = 1;
+            }
+        }
+      }
+      else
+      {
+        /* User cancelled file browser — return to savestate menu */
+        menu_init();
+        choose_menu(current_menu);
+        counter = 0;
       }
     }
-    else
+  }
+
+  void menu_delete_state(void)
+  {
+    char savestate_filename[MAX_FILE];
+    char savestate_path[MAX_PATH];
+    char confirm_msg[80];
+
+    if (first_load || current_option_num >= 11)
+      return;
+
+    get_savestate_filename(savestate_slot, savestate_filename);
+    snprintf(confirm_msg, sizeof(confirm_msg), "%s %s?",
+             MSG[MSG_STATE_MENU_DELETE], savestate_timestamps[savestate_slot]);
+
+    /* yesno_dialog: returns 0 = confirmed (O), 1 = cancel (X) */
+    if (yesno_dialog(confirm_msg) == 0)
     {
-      menu_init();
-      choose_menu(current_menu);
-      counter = 0;
+      snprintf(savestate_path, sizeof(savestate_path), "%s%s", dir_state, savestate_filename);
+      sceIoRemove(savestate_path);
+
+      /* Refresh timestamp to empty */
+      if (savestate_slot == 10)
+        sprintf(savestate_timestamps[savestate_slot], "AUTO: %s",
+                MSG[(date_format == 0) ? MSG_STATE_MENU_DATE_NONE_0 : MSG_STATE_MENU_DATE_NONE_1]);
+      else
+        snprintf(savestate_timestamps[savestate_slot], 40, "%d: %s",
+                 (int)savestate_slot,
+                 MSG[(date_format == 0) ? MSG_STATE_MENU_DATE_NONE_0 : MSG_STATE_MENU_DATE_NONE_1]);
+
+      /* Refresh screenshot to blank */
+      memset(savestate_screen, 0, GBA_SCREEN_SIZE);
+      if (option_language == 0)
+        print_string_ext(MSG[MSG_STATE_MENU_STATE_NONE], X_POS_CENTER, 74,
+                         COLOR15_WHITE, BG_NO_FILL, savestate_screen, GBA_SCREEN_WIDTH);
+      else
+        print_string_ext_gbk(MSG[MSG_STATE_MENU_STATE_NONE], X_POS_CENTER, 74,
+                             COLOR15_WHITE, BG_NO_FILL, savestate_screen, GBA_SCREEN_WIDTH);
+
+      screen_image_ptr = savestate_screen;
     }
   }
 
@@ -2176,7 +3154,7 @@ u32 menu(void)
     const char *file_ext[] = { ".cht", NULL };
     char load_filename[MAX_FILE];
 
-    if(load_file(file_ext, load_filename, dir_cheat) != -1)
+    if(load_file(file_ext, load_filename, dir_cheat, 0) != -1)
     {
 
 	  u32 i,j;
@@ -2284,17 +3262,17 @@ u32 menu(void)
       menu_init_flag = 0;
     }
 
-    if (current_option_num < 10)
+    if (current_option_num < 11)
     {
       if (savestate_slot != current_option_num)
       {
         savestate_slot = current_option_num;
         menu_change_state();
       }
-	if (option_language == 0)
-      print_string(MSG[savestate_action ? MSG_SAVE : MSG_LOAD], MENU_LIST_POS_X + ((strlen(savestate_timestamps[0]) + 1) * FONTWIDTH), (current_option_num * FONTHEIGHT) + 28, color_active_item, BG_NO_FILL);
+      if (option_language == 0)
+      print_string(MSG[savestate_action ? MSG_SAVE : MSG_LOAD], MENU_LIST_POS_X + ((strlen(savestate_timestamps[current_option_num]) + 1) * FONTWIDTH), (current_option_num * FONTHEIGHT) + 28, color_active_item, BG_NO_FILL);
 	else
-      print_string_gbk(MSG[savestate_action ? MSG_SAVE : MSG_LOAD], MENU_LIST_POS_X + ((strlen(savestate_timestamps[0]) + 1) * FONTWIDTH), (current_option_num * FONTHEIGHT) + 28, color_active_item, BG_NO_FILL);
+      print_string_gbk(MSG[savestate_action ? MSG_SAVE : MSG_LOAD], MENU_LIST_POS_X + ((strlen(savestate_timestamps[current_option_num]) + 1) * FONTWIDTH), (current_option_num * FONTHEIGHT) + 28, color_active_item, BG_NO_FILL);
     }
   }
 
@@ -2369,11 +3347,14 @@ u32 menu(void)
 
   void load_savestate_timestamps(void)
   {
-    for (i = 0; i < 10; i++)
+    for (i = 0; i < 11; i++)
     {
       get_savestate_filename(i, filename_buffer);
       get_savestate_info(filename_buffer, NULL, line_buffer);
-      sprintf(savestate_timestamps[i], "%d: %s", i, line_buffer);
+      if (i == 10)
+        sprintf(savestate_timestamps[i], "AUTO: %s", line_buffer);
+      else
+        sprintf(savestate_timestamps[i], "%d: %s", (int)i, line_buffer);
     }
   }
 
@@ -2415,6 +3396,10 @@ u32 menu(void)
     char *end = buf + sizeof(buf);
     int i;
     GUI_ACTION_TYPE gui_action = CURSOR_NONE;
+    s32 scroll_line = 0;
+    s32 total_lines = 0;
+    char *line_ptrs[128];
+    s32 line_count = 0;
 
     if (gamepak_filename[0] == '\0')
     {
@@ -2423,8 +3408,10 @@ u32 menu(void)
     }
 
     snprintf(buf, sizeof(buf),
-      "ROM header: internal title @0xA0 (12 bytes), game_code @0xAC (4), maker @0xB0 (2).\n"
-      "game_config.txt matches game_name, game_code, then vender_code or vendor_code.\n\n"
+      "ROM header: internal title @0xA0 (12 bytes),\n"
+      "game_code @0xAC (4), maker @0xB0 (2).\n"
+      "game_config.txt matches game_name, game_code,\n"
+      "then vender_code or vendor_code.\n\n"
       "%s%s\n\n"
       "Hex 0xA0..0xB1 (18 bytes): ",
       main_path,
@@ -2465,39 +3452,125 @@ u32 menu(void)
     i = (int)strlen(buf);
     snprintf(buf + i, sizeof(buf) - (size_t)i, "\n\n%s", MSG[MSG_ERR_CONT]);
 
-    clear_screen(COLOR32_BLACK);
-    /* mh_print (print_string) does not wrap on '\n'; only print the first line. */
+    /* Count total lines and build line pointer array */
     {
-      u16 ypos = 6;
       char *walk = buf;
-
-      while (*walk != '\0' && (u32)ypos + FONTHEIGHT <= PSP_SCREEN_HEIGHT)
+      line_ptrs[0] = walk;
+      line_count = 1;
+      while (*walk != '\0' && line_count < 128)
       {
         char *nl = strchr(walk, '\n');
-
-        if (nl != NULL)
-          *nl = '\0';
-
-        if (option_language == 0)
-          print_string(walk, 6, ypos, COLOR15_WHITE, COLOR15_BLACK);
-        else
-          print_string_gbk(walk, 6, ypos, COLOR15_WHITE, COLOR15_BLACK);
-
         if (nl != NULL)
         {
-          *nl = '\n';
           walk = nl + 1;
+          line_ptrs[line_count] = walk;
+          line_count++;
         }
         else
+        {
           break;
-
-        ypos = (u16)(ypos + FONTHEIGHT);
+        }
       }
+      /* line_count includes the empty line after last \n, so effective lines = line_count - 1 */
+      total_lines = line_count - 1;
     }
-    flip_screen(1);
 
-    while (gui_action == CURSOR_NONE)
-      gui_action = get_gui_input();
+    {
+      s32 visible_lines = (PSP_SCREEN_HEIGHT - 6) / FONTHEIGHT;
+      s32 max_scroll = (total_lines > visible_lines) ? (total_lines - visible_lines) : 0;
+
+      do
+      {
+        clear_screen(COLOR15_TO_32(color_bg));
+
+        {
+          u16 ypos = 6;
+          s32 line_idx;
+          u32 max_chars = (PSP_SCREEN_WIDTH - 6 - 16) / FONTWIDTH;
+          s32 lines_drawn = 0;
+
+          for (line_idx = scroll_line; line_idx < total_lines && lines_drawn < visible_lines; line_idx++)
+          {
+            char line_buf[80];
+            char *start = line_ptrs[line_idx];
+            char *next_nl = strchr(start, '\n');
+            size_t len;
+            size_t offset = 0;
+
+            if (next_nl != NULL)
+              len = (size_t)(next_nl - start);
+            else
+              len = strlen(start);
+
+            /* Empty line = spacing (draw nothing but advance) */
+            if (len == 0)
+            {
+              ypos = (u16)(ypos + FONTHEIGHT);
+              lines_drawn++;
+              continue;
+            }
+
+            /* Wrap long lines across multiple display lines */
+            while (offset < len && lines_drawn < visible_lines)
+            {
+              size_t chunk = len - offset;
+              if (chunk > max_chars)
+              {
+                chunk = max_chars;
+                /* Word-wrap: find last space within the chunk so we don't
+                   split a hex number (or any token) across lines. */
+                size_t break_at = chunk;
+                while (break_at > 0 && start[offset + break_at - 1] != ' ')
+                  break_at--;
+                if (break_at > 0)
+                  chunk = break_at;
+              }
+              if (chunk >= sizeof(line_buf))
+                chunk = sizeof(line_buf) - 1;
+
+              memcpy(line_buf, start + offset, chunk);
+              line_buf[chunk] = '\0';
+
+              if (option_language == 0)
+                print_string(line_buf, 6, ypos, color_active_item, color_bg);
+              else
+                print_string_gbk(line_buf, 6, ypos, color_active_item, color_bg);
+
+              ypos = (u16)(ypos + FONTHEIGHT);
+              lines_drawn++;
+              offset += chunk;
+            }
+          }
+        }
+
+        /* Scroll indicators */
+        if (scroll_line > 0)
+          print_string(FONT_CURSOR_UP_FILL, PSP_SCREEN_WIDTH - 16, 6, color_scroll_bar, color_bg);
+        if (scroll_line < max_scroll)
+          print_string(FONT_CURSOR_DOWN_FILL, PSP_SCREEN_WIDTH - 16, PSP_SCREEN_HEIGHT - FONTHEIGHT - 2, color_scroll_bar, color_bg);
+
+        /* Exit hint at bottom */
+        print_swap_aware(MSG[MSG_ERR_CONT], X_POS_CENTER, PSP_SCREEN_HEIGHT - FONTHEIGHT - 2, color_help_text, color_bg);
+
+        flip_screen(1);
+
+        gui_action = get_gui_input();
+
+        switch (gui_action)
+        {
+          case CURSOR_UP:
+            if (scroll_line > 0)
+              scroll_line--;
+            break;
+          case CURSOR_DOWN:
+            if (scroll_line < max_scroll)
+              scroll_line++;
+            break;
+          default:
+            break;
+        }
+      } while (gui_action != CURSOR_SELECT && gui_action != CURSOR_EXIT && gui_action != CURSOR_BACK);
+    }
   }
 
 
@@ -2595,6 +3668,8 @@ u32 menu(void)
     NUMERIC_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_HBLANK_IRQ_WIN_START], &option_hblank_irq_window_start, 228, MSG_OPTION_MENU_HELP_HBLANK_IRQ_WIN_START, 5, MSG_TOOLTIP_HBLANK_WIN_START, MSG_OPTION_MENU_HBLANK_IRQ_WIN_START),
     NUMERIC_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_HBLANK_IRQ_WIN_END], &option_hblank_irq_window_end, 228, MSG_OPTION_MENU_HELP_HBLANK_IRQ_WIN_END, 6, MSG_TOOLTIP_HBLANK_WIN_END, MSG_OPTION_MENU_HBLANK_IRQ_WIN_END),
 
+    STRING_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_AUTO_SAVESTATE_SLEEP], on_off_options, &option_auto_savestate_sleep, 2, MSG_OPTION_MENU_HELP_7, 7, MSG_TOOLTIP_AUTO_SAVESTATE_SLEEP, MSG_OPTION_MENU_AUTO_SAVESTATE_SLEEP),
+
     STRING_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_7], stack_optimize_options, &option_stack_optimize, 2, MSG_OPTION_MENU_HELP_7, 8, MSG_TOOLTIP_STACK_OPTIMIZE, MSG_OPTION_MENU_7),
 
     STRING_SELECTION_OPTION(NULL, MSG[MSG_OPTION_MENU_8], yes_no_options, &option_boot_mode, 2, MSG_OPTION_MENU_HELP_8, 10, MSG_OPTION_MENU_8),
@@ -2643,10 +3718,11 @@ u32 menu(void)
     SAVESTATE_OPTION(7),
     SAVESTATE_OPTION(8),
     SAVESTATE_OPTION(9),
+    SAVESTATE_OPTION(10),
 
-    ACTION_OPTION(NULL, NULL, MSG[MSG_STATE_MENU_1], MSG_STATE_MENU_HELP_1, 11, MSG_STATE_MENU_1),
+    ACTION_OPTION(NULL, NULL, MSG[MSG_STATE_MENU_1], MSG_STATE_MENU_HELP_1, 12, MSG_STATE_MENU_1),
 
-    ACTION_SUBMENU_OPTION(NULL, NULL, MSG[MSG_STATE_MENU_2], MSG_STATE_MENU_HELP_2, 13, MSG_STATE_MENU_2)
+    ACTION_SUBMENU_OPTION(NULL, NULL, MSG[MSG_STATE_MENU_2], MSG_STATE_MENU_HELP_2, 14, MSG_STATE_MENU_2)
   };
 
   MAKE_MENU(savestate, NULL, NULL);
@@ -2808,7 +3884,12 @@ u32 menu(void)
 	else
 	print_string_gbk(batt_str, BATT_STATUS_POS_X, 2, color_batt_life, BG_NO_FILL);
 
-    print_string(game_title, 228, 28, color_inactive_item, BG_NO_FILL);
+    {
+        u32 title_hash = hash_string(game_title);
+        update_title_scroll(title_hash);
+        s32 off = compute_scroll_offset(g_scroll.title_tick, strlen(game_title), SCROLL_TITLE_MAX_CHARS);
+        print_string_scroll(game_title, 228, 28, color_inactive_item, BG_NO_FILL, SCROLL_TITLE_MAX_CHARS, off);
+    }
 
     /* In Theme or Custom Colors menus, show live theme preview instead of game screenshot */
     if (current_menu == &custom_colors_menu || current_menu == &theme_menu)
@@ -2857,14 +3938,46 @@ u32 menu(void)
     if (current_menu && current_menu->options)
     {
       display_option = current_menu->options;
+      u32 menu_hash = ((u32)current_menu) ^ current_option_num;
+      update_menu_scroll(menu_hash);
 
       for (i = 0; i < current_menu->num_options; i++, display_option++)
       {
-        format_menu_option_line(line_buffer, sizeof(line_buffer), display_option);
-        print_menu_line(line_buffer, MENU_LIST_POS_X,
-                        (display_option->line_number * FONTHEIGHT) + 28,
-                        (display_option == current_option) ? color_active_item : color_inactive_item,
-                        BG_NO_FILL);
+        if (display_option == current_option) {
+            /* Compute scroll offset based on VALUE length, not label+value */
+            const char *fmt = display_option->display_string;
+            const char *spec_s = (fmt != NULL) ? strstr(fmt, "%s") : NULL;
+            const char *spec_d = (fmt != NULL) ? strstr(fmt, "%d") : NULL;
+            u32 value_len = 0;
+            u32 label_chars = 0;
+
+            if (spec_s != NULL) {
+                /* String option — look up choice */
+                label_chars = (u32)(spec_s - fmt);
+                const char **choices = (const char **)display_option->options;
+                u32 idx = *(display_option->current_option);
+                if (choices != NULL && idx < display_option->num_options && choices[idx] != NULL)
+                    value_len = strlen(choices[idx]);
+            } else if (spec_d != NULL) {
+                /* Numeric option — format the number */
+                label_chars = (u32)(spec_d - fmt);
+                char num_buf[16];
+                sprintf(num_buf, "%d", *(display_option->current_option));
+                value_len = strlen(num_buf);
+            } else {
+                /* No format spec — use full string */
+                value_len = (fmt != NULL) ? strlen(fmt) : 0;
+            }
+
+            u32 value_max = (SCROLL_MENU_MAX_CHARS > label_chars) ? (SCROLL_MENU_MAX_CHARS - label_chars) : 0;
+            s32 off = compute_scroll_offset(g_scroll.menu_tick, value_len, value_max);
+            print_menu_option_split(display_option, MENU_LIST_POS_X,
+                            (display_option->line_number * FONTHEIGHT) + 28,
+                            color_active_item, BG_NO_FILL, SCROLL_MENU_MAX_CHARS, off);
+        } else {            print_menu_option_split(display_option, MENU_LIST_POS_X,
+                            (display_option->line_number * FONTHEIGHT) + 28,
+                            color_inactive_item, BG_NO_FILL, SCROLL_MENU_MAX_CHARS, -1);
+        }
       }
     }
 
@@ -2899,11 +4012,24 @@ u32 menu(void)
 
     // PSP controller - hold
     if (get_pad_input(PSP_CTRL_HOLD) != 0)
-      print_string(FONT_KEY_ICON, 6, 258, COLOR15_YELLOW, BG_NO_FILL);
+      print_string(FONT_KEY_ICON, 6, 258, color_batt_low, BG_NO_FILL);
 
     __draw_volume_status(1);
     flip_screen(1);
 
+
+    /* Triangle: delete savestate when in savestate menu */
+    if (current_menu == &savestate_menu && !first_load && current_option_num < 11)
+    {
+      if (get_pad_input(PSP_CTRL_TRIANGLE) != 0)
+      {
+        /* Wait for release BEFORE opening the dialog, so the held
+           button doesn't leak into yesno_dialog's input loop. */
+        while (get_pad_input(PSP_CTRL_TRIANGLE) != 0)
+          sceKernelDelayThread(5000);
+        menu_delete_state();
+      }
+    }
 
     gui_action = get_gui_input();
 
@@ -3047,6 +4173,7 @@ u32 menu(void)
                     menu_suspend();
                     break;
                   case 18: // Exit TempGBA
+                    /* No silent autosave on exit by default. */
                     quit();
                     break;
                   default:
@@ -3057,12 +4184,13 @@ u32 menu(void)
               {
                 switch (current_option->line_number)
                 {
-                  case 11: // Load State File
+                  case 12: // Load State File
                     menu_load_state_file();
                     break;
                   default:
-                    if (current_option->line_number < 10)
+                    if (current_option->line_number < 11)
                     {
+                      /* No silent pre-load autosave on slot switch by default. */
                       if ((savestate_action != 0 ? menu_save_state() : menu_load_state()) != 0)
                       {
                         return_value = 1;
@@ -3410,11 +4538,11 @@ s32 save_config_file(void)
     file_options[20]  = option_psp_vsync % 2;
     file_options[21]  = option_swap_confirm_buttons;
     file_options[22]  = option_theme % 9;
-
+    file_options[23]  = option_auto_savestate_sleep % 2;
 
     for (i = 0; i < 16; i++)
     {
-      file_options[23 + i] = gamepad_config_map[i];
+      file_options[24 + i] = gamepad_config_map[i];
     }
 
     FILE_WRITE_ARRAY(config_file, file_options);
@@ -3574,6 +4702,68 @@ s32 load_config_file(void)
       option_psp_vsync                = file_options[20] % 2;
       option_swap_confirm_buttons     = file_options[21] % 2;
       option_theme                    = file_options[22] % 9;
+      option_auto_savestate_sleep     = file_options[23] % 2;
+      apply_theme(option_theme);
+
+      for (i = 0; i < 16; i++)
+      {
+        gamepad_config_map[i] = file_options[24 + i] % (BUTTON_ID_NONE + 1);
+
+        if (gamepad_config_map[i] == BUTTON_ID_MENU)
+          menu_button = i;
+      }
+
+      // hardcode triangle to main menu when home button is not enabled
+      if ((enable_home_menu == 0) && (menu_button == -1))
+        gamepad_config_map[0] = BUTTON_ID_MENU;
+
+      FILE_CLOSE(config_file);
+    }
+    else if (file_size == (GPSP_CONFIG_NUM_PRE_AUTOSAVE * 4))
+    {
+      u32 i;
+      u32 file_options[file_size / 4];
+      s32 menu_button = -1;
+
+      FILE_READ_ARRAY(config_file, file_options);
+
+      option_screen_scale     = file_options[0] % 5;
+      option_screen_mag       = file_options[1] % 201;
+      option_screen_filter    = file_options[2] % 2;
+      psp_fps_debug           = file_options[3] % 2;
+      option_frameskip_type   = file_options[4] % 3;
+      option_frameskip_value  = file_options[5];
+      option_clock_speed      = file_options[6] % 4;
+      option_sound_volume     = file_options[7] % 11;
+      option_stack_optimize   = file_options[8] % 2;
+      {
+        u32 stored_ram_dynarec_policy = file_options[9];
+        if (stored_ram_dynarec_policy >= 4 && stored_ram_dynarec_policy <= 6)
+        {
+          option_ram_dynarec_policy = stored_ram_dynarec_policy - 4;
+        }
+        else if (stored_ram_dynarec_policy <= 1)
+        {
+          option_ram_dynarec_policy = stored_ram_dynarec_policy + 1;
+        }
+        else
+        {
+          option_ram_dynarec_policy = RAM_DYNAREC_PARTIAL_WITH_REUSE;
+        }
+      }
+      option_video_renderer           = file_options[10] % 2;
+      option_oam_hijacking_enabled    = file_options[11] % 2;
+      option_boot_mode                = file_options[12] % 2;
+      option_update_backup            = file_options[13] % 2;
+      option_screen_capture_format    = file_options[14] % 2;
+      option_enable_analog            = file_options[15] % 2;
+      option_analog_sensitivity       = file_options[16] % 10;
+      option_language                 = file_options[17] % 5;
+      option_hblank_irq_window_start  = file_options[18] % 228;
+      option_hblank_irq_window_end    = file_options[19] % 228;
+      option_psp_vsync                = file_options[20] % 2;
+      option_swap_confirm_buttons     = file_options[21] % 2;
+      option_theme                    = file_options[22] % 9;
       apply_theme(option_theme);
 
       for (i = 0; i < 16; i++)
@@ -3584,7 +4774,6 @@ s32 load_config_file(void)
           menu_button = i;
       }
 
-      // hardcode triangle to main menu when home button is not enabled
       if ((enable_home_menu == 0) && (menu_button == -1))
         gamepad_config_map[0] = BUTTON_ID_MENU;
 
@@ -4074,18 +5263,14 @@ s32 load_dir_cfg(char *file_name)
     check_directory(dir_snap,  item_snap);
     check_directory(dir_cheat, item_cheat);
 
-    if (str_line > 7)
-    {
-      sprintf(str_buf, MSG[MSG_ERR_SET_DIR_2], main_path);
-      sprintf(str_buf, "%s\n\n%s", str_buf, MSG[MSG_ERR_CONT]);
+      if (str_line > 7)
+      {
+        sprintf(str_buf, MSG[MSG_ERR_SET_DIR_2], main_path);
+        sprintf(str_buf, "%s\n\n%s", str_buf, MSG[MSG_ERR_CONT]);
 
-      str_line += FONTHEIGHT;
-	  if (option_language == 0)
-      print_string(str_buf, 7, str_line, COLOR15_WHITE, COLOR15_BLACK);
-	  else
-      print_string_gbk(str_buf, 7, str_line, COLOR15_WHITE, COLOR15_BLACK);
-      error_msg("", CONFIRMATION_NONE);
-    }
+        str_line += FONTHEIGHT;
+        error_msg(str_buf, CONFIRMATION_NONE);
+      }
 
     return 0;
   }

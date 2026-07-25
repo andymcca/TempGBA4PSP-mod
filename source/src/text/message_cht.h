@@ -230,8 +230,11 @@
   // MSG_STATE_MENU_2
   "返回",
 
+  // MSG_STATE_MENU_DELETE
+  "刪除",
+
   // MSG_STATE_MENU_HELP_0
-  FONT_BTN_CIRCLE_GBK ":執行   " FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":載入/儲存   " FONT_BTN_CROSS_GBK ":退出",
+  FONT_BTN_CIRCLE_GBK ":執行   " FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":載入/儲存   " FONT_BTN_TRIANGLE_GBK ":刪除   " FONT_BTN_CROSS_GBK ":退出",
 
   // MSG_STATE_MENU_HELP_1
   FONT_BTN_CIRCLE_GBK ":檔案瀏覽器   " FONT_L_TRIGGER_GBK ":快捷鍵   "FONT_BTN_CROSS_GBK ":退出",
@@ -575,6 +578,12 @@
   // MSG_SAVE_STATE_NO
   "存檔槽: %d",
 
+  // MSG_LOAD_STATE_AUTO
+  "載入狀態槽: AUTO",
+
+  // MSG_SAVE_STATE_AUTO
+  "存檔槽: AUTO",
+
   // MSG_YES_NO
   FONT_BTN_CIRCLE_GBK ":是的   " FONT_BTN_CROSS_GBK ":不",
 
@@ -841,5 +850,29 @@
 
   // MSG_VOL_100
   "100",
+
+  // MSG_AUTO_SAVESTATE_LOAD_PROMPT
+  "載入自動儲存狀態?",
+
+  // MSG_LOAD_ROM_AND_STATE
+  "載入 %s 並儲存遊戲狀態?",
+
+  // MSG_LOAD_STATE_FILE
+  "載入存檔狀態檔案?",
+
+  // MSG_ERR_ROM_NOT_FOUND
+  "找不到 ROM 檔案",
+
+  // MSG_BROWSER_RECENT_GAMES
+  "--- 近期遊戲 ---",
+
+  // MSG_BROWSER_ALL_GAMES
+  "--- 所有遊戲 ---",
+
+  // MSG_OPTION_MENU_AUTO_SAVESTATE_SLEEP
+  "Auto-save on sleep",
+
+  // MSG_TOOLTIP_AUTO_SAVESTATE_SLEEP
+  "When ON, writes slot AUTO (_auto.svs) on sleep/suspend from the main thread.\nExit and ROM-switch do not auto-save.",
 
 },

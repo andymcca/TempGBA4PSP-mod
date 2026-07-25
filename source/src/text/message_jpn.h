@@ -230,8 +230,11 @@
   // MSG_STATE_MENU_2
   "戻る",
 
+  // MSG_STATE_MENU_DELETE
+  "削除",
+
   // MSG_STATE_MENU_HELP_0
-  FONT_BTN_CIRCLE_GBK ":実行   " FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":読み込み/保存   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_BTN_CIRCLE_GBK ":実行   " FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":読み込み/保存   " FONT_BTN_TRIANGLE_GBK ":削除   " FONT_BTN_CROSS_GBK ":終了",
 
   // MSG_STATE_MENU_HELP_1
   FONT_BTN_CIRCLE_GBK ":ファイルブラウザ   " FONT_L_TRIGGER_GBK ":ショートカットキー   "FONT_BTN_CROSS_GBK ":終了",
@@ -575,6 +578,12 @@
   // MSG_SAVE_STATE_NO
   "セーブスロット: %d",
 
+  // MSG_LOAD_STATE_AUTO
+  "状態スロットの読み込み: AUTO",
+
+  // MSG_SAVE_STATE_AUTO
+  "セーブスロット: AUTO",
+
   // MSG_YES_NO
   FONT_BTN_CIRCLE_GBK ":はい   " FONT_BTN_CROSS_GBK ":いいえ",
 
@@ -840,5 +849,29 @@
 
   // MSG_VOL_100
   "100",
+
+  // MSG_AUTO_SAVESTATE_LOAD_PROMPT
+  "自動セーブ状態を読み込む?",
+
+  // MSG_LOAD_ROM_AND_STATE
+  "%sを読み込み、セーブステートを保存する?",
+
+  // MSG_LOAD_STATE_FILE
+  "セーブステートファイルを読み込む?",
+
+  // MSG_ERR_ROM_NOT_FOUND
+  "ROM ファイルが見つかりません",
+
+  // MSG_BROWSER_RECENT_GAMES
+  "--- 最近のゲーム ---",
+
+  // MSG_BROWSER_ALL_GAMES
+  "--- すべてのゲーム ---",
+
+  // MSG_OPTION_MENU_AUTO_SAVESTATE_SLEEP
+  "Auto-save on sleep",
+
+  // MSG_TOOLTIP_AUTO_SAVESTATE_SLEEP
+  "When ON, writes slot AUTO (_auto.svs) on sleep/suspend from the main thread.\nExit and ROM-switch do not auto-save.",
 
 },
