@@ -3512,16 +3512,10 @@ s32 load_gamepak(char *name)
   gamepak_file_large = -1;
 
   draw_popup_frame_auto(110, 50, 260, 170);
-  if (option_language == 0)
-    print_string(MSG[MSG_LOADING_ROM], X_POS_CENTER, 100, color_active_item, BG_NO_FILL);
-  else
-    print_string_gbk(MSG[MSG_LOADING_ROM], X_POS_CENTER, 100, color_active_item, BG_NO_FILL);
+  print_string(MSG[MSG_LOADING_ROM], X_POS_CENTER, 100, color_active_item, BG_NO_FILL);
   flip_screen(1);
   draw_popup_frame_auto(110, 50, 260, 170);
-  if (option_language == 0)
-    print_string(MSG[MSG_LOADING_ROM], X_POS_CENTER, 100, color_active_item, BG_NO_FILL);
-  else
-    print_string_gbk(MSG[MSG_LOADING_ROM], X_POS_CENTER, 100, color_active_item, BG_NO_FILL);
+  print_string(MSG[MSG_LOADING_ROM], X_POS_CENTER, 100, color_active_item, BG_NO_FILL);
 
   scePowerLock(0);
   set_cpu_clock(PSP_CLOCK_333);
@@ -3535,10 +3529,7 @@ s32 load_gamepak(char *name)
   if (!strcasecmp(dot_position, ".gba") || !strcasecmp(dot_position, ".agb") || !strcasecmp(dot_position, ".bin"))
   {
     file_size = load_gamepak_raw(name);
-	if (option_language == 0)
-		print_string(MSG[MSG_SEARCHING_BACKUP_ID], X_POS_CENTER, 148, color_active_item, BG_NO_FILL);
-    else
-		print_string_gbk(MSG[MSG_SEARCHING_BACKUP_ID], X_POS_CENTER, 148, color_active_item, BG_NO_FILL);
+	print_string(MSG[MSG_SEARCHING_BACKUP_ID], X_POS_CENTER, 148, color_active_item, BG_NO_FILL);
     flip_screen(1);
   }
 

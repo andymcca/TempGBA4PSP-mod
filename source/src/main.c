@@ -20,6 +20,10 @@
 
 
 #include "common.h"
+#include "power_lifecycle.h"
+
+static PowerLifecycle psp_power_lifecycle;
+static u32 sleep_reopen_gamepak = 0;
 
 /* Forward declarations for recent ROMs functions (defined in gui.c) */
 extern void load_recent_roms(void);
@@ -67,8 +71,8 @@ char main_path[MAX_PATH];
 int date_format = 0;
 u32 enable_home_menu = 1;
 
-u32 sleep_flag = 0;
-u32 sleep_auto_saved = 0;
+volatile u32 sleep_flag = 0;
+volatile u32 sleep_auto_saved = 0;
 
 u32 synchronize_flag = 1;
 u32 psp_fps_debug = 0;
@@ -150,6 +154,8 @@ static void vblank_interrupt_handler(u32 sub, u32 *parg);
 
 static void synchronize(void);
 static void psp_sleep_loop(void);
+static void main_power_save_if_pending(void);
+void main_power_service(void);
 
 #define scePowerSetClockFrequency371  scePower_EBD177D6
 static int (*__scePowerSetClockFrequency)(int pllfreq, int cpufreq, int busfreq);
@@ -325,8 +331,7 @@ u32 update_gba(void)
 
     update_gba_loop:
 
-    if (sleep_flag != 0)
-      psp_sleep_loop();
+    main_power_service();
 
     cpu_ticks += reg[EXECUTE_CYCLES];
 
@@ -582,10 +587,7 @@ static void synchronize(void)
     if (reg[CPU_HALT_STATE] == CPU_STOP)
     {
       clear_screen(0);
-      if (option_language == 0)
-        print_string(MSG[MSG_GBA_SLEEP_MODE], X_POS_CENTER, 130, color_active_item, BG_NO_FILL);
-      else
-        print_string_gbk(MSG[MSG_GBA_SLEEP_MODE], X_POS_CENTER, 130, color_active_item, BG_NO_FILL);
+      print_string(MSG[MSG_GBA_SLEEP_MODE], X_POS_CENTER, 130, color_active_item, BG_NO_FILL);
     }
 
     // PSP controller - hold
@@ -606,17 +608,11 @@ static void synchronize(void)
   {
     if (psp_fps_debug != 0)
     {
-      if (option_language == 0)
-        print_string(MSG[MSG_TURBO], 0, 12, COLOR15_WHITE, COLOR15_BLACK);
-      else
-        print_string_gbk(MSG[MSG_TURBO], 0, 12, COLOR15_WHITE, COLOR15_BLACK);
+      print_string(MSG[MSG_TURBO], 0, 12, COLOR15_WHITE, COLOR15_BLACK);
     }
     else
     {
-      if (option_language == 0)
-        print_string(MSG[MSG_TURBO], 0, 0, COLOR15_WHITE, COLOR15_BLACK);
-      else
-        print_string_gbk(MSG[MSG_TURBO], 0, 0, COLOR15_WHITE, COLOR15_BLACK);
+      print_string(MSG[MSG_TURBO], 0, 0, COLOR15_WHITE, COLOR15_BLACK);
     }
     used_frameskip_type = FRAMESKIP_MANUAL;
     used_frameskip_value = 4;
@@ -751,6 +747,30 @@ static int load_ku_bridge_prx(int devkit_version)
 }
 
 
+static int load_cp_fix_gbk_prx(void)
+{
+  SceUID mod;
+  char prx_path[MAX_PATH];
+
+  sprintf(prx_path, "%scp_fix_gbk.prx", main_path);
+
+  if ((mod = sceKernelLoadModule(prx_path, 0, NULL)) >= 0)
+  {
+    int status;
+
+    if (sceKernelStartModule(mod, 0, 0, &status, NULL) < 0)
+    {
+      sceKernelUnloadModule(mod);
+      return -1;
+    }
+
+    return 0;
+  }
+
+  return -1;
+}
+
+
 static void load_setting_cfg(void)
 {
   char filename[MAX_FILE];
@@ -833,6 +853,9 @@ static void setup_main(const char *eboot_path)
   video_resolution_large();
 
   find_main_path(eboot_path);
+
+  /* Load codepage patch so file I/O works with GBK/Chinese filenames */
+  load_cp_fix_gbk_prx();
 
   sceKernelRegisterSubIntrHandler(PSP_VBLANK_INT, 0, vblank_interrupt_handler, NULL);
   sceKernelEnableSubIntr(PSP_VBLANK_INT, 0);
@@ -992,46 +1015,82 @@ void reset_gba(void)
 
 static void psp_sleep_loop(void)
 {
-  if (!sleep_auto_saved && gamepak_filename[0] != '\0')
+  main_power_save_if_pending();
+
+  if (FILE_CHECK_VALID(gamepak_file_large))
+  {
+    FILE_CLOSE(gamepak_file_large);
+    gamepak_file_large = -1;
+    sleep_reopen_gamepak = 1;
+  }
+
+  do
+  {
+    sceKernelDelayThread(100 * 1000);
+  }
+  while (sleep_flag != 0);
+}
+
+
+static void main_power_save_if_pending(void)
+{
+  if(power_lifecycle_take_save(&psp_power_lifecycle) &&
+     !sleep_auto_saved && gamepak_filename[0] != '\0')
   {
     auto_savestate_sleep();
     sleep_auto_saved = 1;
   }
+}
 
-  if (FILE_CHECK_VALID(gamepak_file_large))
+static void main_power_reopen_gamepak(void)
+{
+  s32 i;
+
+  if(!sleep_reopen_gamepak)
+    return;
+
+  for(i = 0; i < 5; i++)
   {
-    s32 i;
+    FILE_OPEN(gamepak_file_large, gamepak_filename_raw, READ);
 
+    if(FILE_CHECK_VALID(gamepak_file_large))
+    {
+      sleep_reopen_gamepak = 0;
+      return;
+    }
+
+    sceKernelDelayThread(500 * 1000);
+  }
+
+  clear_screen(COLOR32_BLACK);
+  error_msg(MSG[MSG_ERR_OPEN_GAMEPACK], CONFIRMATION_QUIT);
+  quit();
+}
+
+void main_power_service(void)
+{
+  PowerLifecycleState state;
+  int audio_result;
+
+  state = power_lifecycle_state(&psp_power_lifecycle);
+  if(sleep_flag != 0 || state == POWER_LIFECYCLE_SUSPENDED)
+    psp_sleep_loop();
+
+  main_power_save_if_pending();
+
+  if(!power_lifecycle_take_resume(&psp_power_lifecycle, &audio_result))
+    return;
+
+  if(FILE_CHECK_VALID(gamepak_file_large) && !sleep_reopen_gamepak)
+  {
     FILE_CLOSE(gamepak_file_large);
-
-    do
-    {
-      sceKernelDelayThread(500 * 1000);
-    }
-    while (sleep_flag != 0);
-
-    for (i = 0; i < 5; i++)
-    {
-      FILE_OPEN(gamepak_file_large, gamepak_filename_raw, READ);
-
-      if (FILE_CHECK_VALID(gamepak_file_large))
-        return;
-
-      sceKernelDelayThread(500 * 1000);
-    }
-
-    clear_screen(COLOR32_BLACK);
-    error_msg(MSG[MSG_ERR_OPEN_GAMEPACK], CONFIRMATION_QUIT);
-    quit();
+    gamepak_file_large = -1;
+    sleep_reopen_gamepak = 1;
   }
-  else
-  {
-    do
-    {
-      sceKernelDelayThread(500 * 1000);
-    }
-    while (sleep_flag != 0);
-  }
+
+  main_power_reopen_gamepak();
+  sound_power_resume_finish(cpu_ticks, audio_result);
+  sleep_auto_saved = 0;
 }
 
 
@@ -1046,21 +1105,20 @@ static int power_callback(int unknown, int powerInfo, void *arg)
 {
   if ((powerInfo & PSP_POWER_CB_SUSPENDING) != 0)
   {
+    sound_power_suspend();
+    power_lifecycle_suspend(&psp_power_lifecycle,
+                            gamepak_filename[0] != '\0');
     sleep_flag = 1;
-    if (!sleep_auto_saved && gamepak_filename[0] != '\0')
-    {
-      auto_savestate_sleep();
-      sleep_auto_saved = 1;
-    }
   }
-  else
-
   if ((powerInfo & PSP_POWER_CB_RESUME_COMPLETE) != 0)
   {
-    psp_sound_frequency(SOUND_SAMPLES, SOUND_FREQUENCY);
-
+    if(power_lifecycle_state(&psp_power_lifecycle) ==
+       POWER_LIFECYCLE_SUSPENDED)
+    {
+      int audio_result = sound_power_resume();
+      power_lifecycle_resume(&psp_power_lifecycle, audio_result);
+    }
     sleep_flag = 0;
-    sleep_auto_saved = 0;
   }
 
   return 0;
@@ -1097,7 +1155,9 @@ static void setup_callbacks(void)
     quit();
   }
 
+  power_lifecycle_init(&psp_power_lifecycle);
   sleep_flag = 0;
+  sleep_auto_saved = 0;
   sceKernelStartThread(thid, 0, 0);
 }
 
@@ -1178,14 +1238,7 @@ u32 yesno_dialog(const char *text)
 
   draw_popup_frame_auto(popup_x, popup_y, popup_w, popup_h);
 
-  if (option_language == 0)
-  {
-    print_string(text, X_POS_CENTER, popup_y + 16, color_active_item, BG_NO_FILL);
-  }
-  else
-  {
-    print_string_gbk(text, X_POS_CENTER, popup_y + 16, color_active_item, BG_NO_FILL);
-  }
+  print_string(text, X_POS_CENTER, popup_y + 16, color_active_item, BG_NO_FILL);
   print_swap_aware(MSG[MSG_YES_NO], X_POS_CENTER, popup_y + 46, color_active_item, BG_NO_FILL);
 
   flip_screen(1);

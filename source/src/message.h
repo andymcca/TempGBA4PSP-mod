@@ -23,6 +23,8 @@
 
 #define MSG  message[option_language]
 
+#define LANGUAGE_NUM 5
+
 enum MESSAGE_ITEM
 {
   MSG_TURBO,
@@ -384,6 +386,6 @@ enum MESSAGE_ITEM
   MSG_END
 };
 
-extern const char *message[5][MSG_END];
+extern const char *message[LANGUAGE_NUM][MSG_END];
 
 #endif /* MESSAGE_H */

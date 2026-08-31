@@ -293,7 +293,7 @@
   // MSG_PAD_MENU_HELP_1
   FONT_BTN_CIRCLE_GBK ":Main menu   " FONT_BTN_CROSS_GBK ":Exit",
 
-  // PADã®è¨­å®š ã‚³ãƒ³ãƒ•ã‚£ã‚°
+  // PAD¤ÎÔO¶¨ ¥³¥ó¥Õ¥£¥°
 
   // MSG_PAD_MENU_CFG_0
   FONT_CURSOR_UP_GBK,
@@ -500,16 +500,16 @@
   "16:9 GU",
 
   // MSG_LANG_JAPANESE
-  "æ—¥æœ¬èªž",
+  "ÈÕ±¾ÕZ",
 
   // MSG_LANG_ENGLISH
   "English",
 
   // MSG_LANG_CHS
-  "ç®€ä½“ä¸­æ–‡",
+  "¼òÌåÖÐÎÄ",
 
   // MSG_LANG_CHT
-  "ç¹é«”ä¸­æ–‡",
+  "·±ówÖÐÎÄ",
 
   // MSG_SS_DATE_FMT_0
   "%04d_%02d_%02d_%s%02d_%02d_%02d_%03d",

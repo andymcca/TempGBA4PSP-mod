@@ -99,7 +99,7 @@
   FONT_BTN_CIRCLE_GBK ":Entra in modalita riposo",
 
   // MSG_MAIN_MENU_HELP_11
-  FONT_BTN_CIRCLE_GBK ":Esci emulatore",
+  FONT_BTN_CIRCLE_GBK ":Esci dall'emulatore",
 
   // MSG_OPTION_MENU_TITLE
   "Opzioni prestazioni",
@@ -293,7 +293,7 @@
   // MSG_PAD_MENU_HELP_1
   FONT_BTN_CIRCLE_GBK ":Menu principale   " FONT_BTN_CROSS_GBK ":Esci",
 
-  // PAD„ÅÆË®≠ÂÆö „Ç≥„É≥„Éï„Ç£„Ç∞
+  // PAD§Œ‘O∂® •≥•Û•’•£•∞
 
   // MSG_PAD_MENU_CFG_0
   FONT_CURSOR_UP_GBK,
@@ -500,16 +500,16 @@
   "16:9 GU",
 
   // MSG_LANG_JAPANESE
-  "Êó•Êú¨Ë™û",
+  "»’±æ’Z",
 
   // MSG_LANG_ENGLISH
   "English",
 
   // MSG_LANG_CHS
-  "ÁÆÄ‰Ωì‰∏≠Êñá",
+  "ºÚÃÂ÷–Œƒ",
 
   // MSG_LANG_CHT
-  "ÁπÅÈ´î‰∏≠Êñá",
+  "∑±Ûw÷–Œƒ",
 
   // MSG_SS_DATE_FMT_0
   "%04d_%02d_%02d_%s%02d_%02d_%02d_%03d",
@@ -680,7 +680,7 @@
   "H-Blank e` usato da alcuni giochi per visualizzare degli effetti.\nSeleziona la linea di partenza. 0=OFF",
 
   // MSG_TOOLTIP_HBLANK_WIN_END
-  "H-Blank e` usato da alcuni giochi per visualizzare degli effetti.\nSeleziona la linea di fine. 0=OFF | 1-160=area visibile schermo |\n                                   | 161-227=V-Blank",
+  "H-Blank e` usato da alcuni giochi per visualizzare degli effetti.\nSeleziona la linea di fine. 0=OFF | 1-160=area visibile schermo |\n                                  | 161-227=V-Blank",
 
   // MSG_TOOLTIP_STACK_OPTIMIZE
   "AUTO: Accumula cicli inattivi e li salta in blocco. Veloce.\nOFF: Ogni ciclo e` emulato normalmente. Accurato, ma lento.",

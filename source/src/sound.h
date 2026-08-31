@@ -67,5 +67,9 @@ void synchronize_sound(void);
 void sound_write_mem_savestate(SceUID savestate_file);
 void sound_read_savestate(SceUID savestate_file);
 
+void sound_power_suspend(void);
+int sound_power_resume(void);
+void sound_power_resume_finish(u32 cpu_ticks, int audio_result);
+
 
 #endif /* SOUND_H */

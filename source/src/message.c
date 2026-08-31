@@ -21,7 +21,7 @@
 #include "common.h"
 
 
-const char *message[5][MSG_END] =
+const char *message[LANGUAGE_NUM][MSG_END] =
 {
 #include "text/message_jpn.h"
 #include "text/message_eng.h"
