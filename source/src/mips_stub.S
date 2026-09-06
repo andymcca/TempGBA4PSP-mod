@@ -1098,6 +1098,29 @@ mips_indirect_branch_dual_no_update_gba:
   addiu $17, $17, \waitstate      # waitstate cycles (delay)
 .endm
 
+# IWRAM aligned STM: only invalidate if the dest is on the stack
+# (GBA SP in IWRAM and dest >= SP). SMOL copies ARM onto a local
+# buffer and executes it; the HQ mixer writes data below SP in the
+# same IWRAM and must not lose its tags (that compiles PCM state
+# as code and destroys audio). $6 is the STM base, not the GBA PC.
+.macro store_u32a_iwram_stack_smc waitstate
+  sw $5, %lo(iwram)($2)
+  addiu $17, $17, \waitstate
+  srl $1, $28, 24                 # $1 = SP region
+  andi $1, $1, 0x0F
+  addiu $2, $0, 3
+  bne $1, $2, 1f                  # SP not in IWRAM
+  andi $1, $28, 0x7FFC            # SP offset (delay)
+  sltu $2, $4, $1                 # dest < SP?
+  bne $2, $0, 1f                  # below SP: mixer / normal IWRAM data
+  nop
+  j post_write_metadata_aligned_iwram
+  nop
+1:
+  jr $ra
+  nop
+.endm
+
 
 # Store the value double mirrored (u16)
 
@@ -1181,6 +1204,24 @@ post_write_metadata_iwram:
 
 post_write_metadata_vram:
   post_write_metadata_core vram, vram_metadata, 0x06
+
+post_write_metadata_aligned_iwram:
+  srl $2, $4, 2                   # $2 = (address & ~3) [>> 2]
+  sll $2, $2, 3                   # byte offset into a 16-bit array: * 2
+  la $1, iwram_metadata
+  addu $1, $1, $2                 # $1 = &iwram_metadata[offset]
+
+  lhu $2, 6($1)                   # code modification status
+  andi $2, $2, 0x3
+  beq $2, $0, 1f
+  nop
+  sh $0, 0($1)                    # Thumb 1 tag
+  sh $0, 2($1)                    # ARM tag
+  sh $0, 4($1)                    # Thumb 2 tag
+  sh $0, 6($1)                    # code / uncond-branch flags
+1:
+  jr $ra
+  nop
 
 .macro store_u8_metadata base, waitstate, post_function
   sb $5, %lo(\base)($2)           # store value at base[offset]
@@ -2931,7 +2972,7 @@ execute_store_ewram_u32a:
 execute_aligned_store32:
 execute_store_iwram_u32a:
   translate_region 3, patch_store_u32a, iwram, 0x7FFC
-  store_u32a iwram, -1
+  store_u32a_iwram_stack_smc -1
 
 execute_store_io_u32a:
   region_check 4, patch_store_u32a
