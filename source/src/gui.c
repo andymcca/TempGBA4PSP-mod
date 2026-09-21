@@ -2647,6 +2647,11 @@ s32 load_file(const char **wildcards, char *result, char *default_dir_name, u32 
 
   } /* end while (return_value == 1) */
 
+  /* Re-enable the OS HOME dialog. Leaving this at 0 makes HOME exit
+     the emulator immediately after picking a ROM (including during the
+     auto-savestate prompt that follows). */
+  sceImposeSetHomePopup(1);
+
   return return_value;
 }
 
@@ -2801,6 +2806,18 @@ static u32 auto_savestate_exists(void)
     return 1;
   }
   return 0;
+}
+
+void maybe_load_auto_savestate(void)
+{
+  if (gamepak_filename[0] == '\0')
+    return;
+
+  if (!auto_savestate_exists())
+    return;
+
+  if (yesno_dialog(MSG[MSG_AUTO_SAVESTATE_LOAD_PROMPT]) == 0)
+    action_loadstate_slot(10);
 }
 
 static u32 ram_dynarec_policy_menu_prev = ~(u32)0;
@@ -3246,14 +3263,7 @@ u32 menu(void)
       /* Add to recent ROMs list */
       add_recent_rom(filename_buffer);
 
-      /* Prompt to load auto-savestate for the newly loaded game */
-      if (auto_savestate_exists())
-      {
-        if (yesno_dialog(MSG[MSG_AUTO_SAVESTATE_LOAD_PROMPT]) == 0)
-        {
-          action_loadstate_slot(10);
-        }
-      }
+      maybe_load_auto_savestate();
 
       return_value = 1;
       repeat = 0;
@@ -4632,14 +4642,14 @@ u32 menu(void)
                 switch (current_option->line_number)
                 {
                   case 0:  // Load State
-                    if (action_loadstate() != 0)
+                    if (!first_load && action_loadstate() != 0)
                     {
                       return_value = 1;
                       repeat = 0;
                     }
                     break;
                   case 1:  // Save State
-                    if (action_savestate() != 0)
+                    if (!first_load && action_savestate() != 0)
                     {
                       return_value = 1;
                       repeat = 0;
