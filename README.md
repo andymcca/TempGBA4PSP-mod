@@ -49,7 +49,8 @@ It remains a homebrew GBA emulator — you need a legal BIOS dump (`gba_bios.bin
 - **Recent ROMs** — Up to 5 recently played games appear at the top of the file browser for quick re-launch. Saved automatically between sessions.
 - **Internationalization** — menu strings in **Japanese, English, Simplified Chinese, Traditional Chinese, and Italian**.
 - **Confirm button swap** — choose **O confirms** or **X confirms** (PSP-region style). Older `tempgba.cfg` files written before these slots were added still load correctly.
-- **Savestates** — 10 manual slots plus an automatic slot that saves when you exit the emulator, put the PSP to sleep, load a new ROM, or load a different savestate. 
+- **Savestates** — 10 manual slots plus an automatic slot that saves when you exit the emulator, put the PSP to sleep, load a new ROM, or load a different savestate.
+- **Gameplay sleep/resume** — power-button sleep while a ROM is running no longer crashes on wake. Savestate I/O and ROM reopen run on the main thread; audio is suspended/resumed with timeouts. 
 - **Savestate UX** — details save/load fixes; leaving the menu after state operations behaves more predictably.
 - **Menu polish** — fixed `%s` label formatting, restored cursor repeat speed, and earlier crash/text issues between game ↔ menu transitions.
 
@@ -278,8 +279,9 @@ Artifacts (`EBOOT.PBP`, `TempGBA.prx`, etc.) are written under `source/` on the 
 - **libretro/gpsp** — upstream accuracy and renderer fixes ported into this tree
 - **UI themes / i18n / X/O swap** — contributors to PR #20
 - **Single-game layout** — compatible with [GrabowskiDev/TempGBA4PSP-Single-game](https://github.com/GrabowskiDev/TempGBA4PSP-Single-game)
+- **PSP sleep/resume power management** — adapted from [Piero Carrieri / GBA-Rush-PSP](https://github.com/redcode9/GBA-Rush-PSP)
 - **This mod** — [andymcca/TempGBA4PSP-mod](https://github.com/andymcca/TempGBA4PSP-mod)
-- **Contributions** — [JxPv2](https://github.com/JxPv2) (single-game launcher builder tool and launcher stub, GUI improvements, boxart and recent ROMs)
+- **Contributions** — [JxPv2](https://github.com/JxPv2) (single-game launcher builder tool and launcher stub, GUI improvements, boxart and recent ROMs, gameplay sleep/resume)
 
 ---
 
