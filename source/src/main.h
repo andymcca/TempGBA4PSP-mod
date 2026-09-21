@@ -87,8 +87,8 @@ extern char main_path[MAX_PATH];
 extern int date_format;
 extern u32 enable_home_menu;
 
-extern u32 sleep_flag;
-extern u32 sleep_auto_saved;
+extern volatile u32 sleep_flag;
+extern volatile u32 sleep_auto_saved;
 
 extern u32 synchronize_flag;
 extern u32 psp_fps_debug;
