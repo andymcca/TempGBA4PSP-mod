@@ -927,7 +927,7 @@ int user_main(int argc, char *argv[])
     else if (load_file(file_ext, load_filename, dir_roms, 1) < 0)
     {
       /* Left the startup browser for the menu. menu() returns 1 if a ROM
-         was loaded there; ignore that and main() exits after the prompt. */
+         was loaded there (including after the auto-savestate prompt). */
       if (menu() != 0)
       {
         rom_loaded = 1;
@@ -954,7 +954,12 @@ int user_main(int argc, char *argv[])
   if (rom_loaded)
   {
     if (!prepared_by_menu)
+    {
       reset_gba();
+      maybe_load_auto_savestate();
+    }
+
+    sceImposeSetHomePopup(enable_home_menu ^ 1);
 
     set_cpu_clock(option_clock_speed);
 
@@ -1192,6 +1197,11 @@ u32 yesno_dialog(const char *text)
   const int popup_h = 80;
   const int popup_x = (PSP_SCREEN_WIDTH - popup_w) / 2;
   const int popup_y = (PSP_SCREEN_HEIGHT - popup_h) / 2;
+
+  /* Circle/Cross used to pick the ROM would otherwise answer this
+     dialog immediately. */
+  while (get_pad_input(0x0001FFFF) != 0)
+    sceKernelDelayThread(5000);
 
   draw_popup_frame_auto(popup_x, popup_y, popup_w, popup_h);
 
