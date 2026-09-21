@@ -1,18 +1,18 @@
 {
   // MSG_TURBO
-  "加速する",
+  "���٤���",
 
   // MSG_CHARGE
-  "[充電中]",
+  "[�����]",
 
   // MSG_BUFFER
-  "ROM チェイス %2dMB",
+  "ROM �������� %2dMB",
 
   // MSG_BROWSER_HELP
-  FONT_BTN_CIRCLE_GBK ":選択   " FONT_BTN_SQUARE_GBK ":親フォルダ " FONT_UP_DIRECTORY_GBK "   SELECT:表示を切り替える   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_BTN_CIRCLE_GBK ":�x�k   " FONT_BTN_SQUARE_GBK ":�H�ե���� " FONT_UP_DIRECTORY_GBK "   SELECT:��ʾ���Ф��椨��   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_BROWSER_HELP_ROOT
-  FONT_BTN_CIRCLE_GBK ":選択   SELECT: 表示を切り替える   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_BTN_CIRCLE_GBK ":�x�k   SELECT: ��ʾ���Ф��椨��   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_MENU_DATE_FMT_0
   "%4d/%2d/%2d %-3s %2d:%02d",
@@ -21,190 +21,190 @@
   "%2d/%2d/%4d %-3s %2d:%02d",
 
   // MSG_MAIN_MENU_TITLE
-  "メインメニュー",
+  "�ᥤ���˥�`",
 
   // MSG_MAIN_MENU_0
-  "ロード状態 : スロット %d",
+  "���`��״�B : �����å� %d",
 
   // MSG_MAIN_MENU_1
-  "状態の保存 : スロット %d",
+  "״�B�α��� : �����å� %d",
 
   // MSG_MAIN_MENU_2
-  "セーブステートの詳細   " FONT_R_TRIGGER_GBK,
+  "���`�֥��Ʃ`�Ȥ�Ԕ��   " FONT_R_TRIGGER_GBK,
 
   // MSG_MAIN_MENU_3
-  "グラフィック設定",
+  "����ե��å��O��",
 
   // MSG_MAIN_MENU_4
-  "パフォーマンスのオプション",
+  "�ѥե��`�ޥ󥹤Υ��ץ����",
 
   // MSG_MAIN_MENU_5
-  "ゲームパッドの設定",
+  "���`��ѥåɤ��O��",
 
   // MSG_MAIN_MENU_6
-  "アナログスティックの設定",
+  "���ʥ������ƥ��å����O��",
 
   // MSG_MAIN_MENU_CHEAT
-  "チート設定",
+  "���`���O��",
 
   // MSG_MAIN_MENU_7
-  "ゲームを読み込む   " FONT_L_TRIGGER_GBK,
+  "���`����i���z��   " FONT_L_TRIGGER_GBK,
 
   // MSG_MAIN_MENU_8
-  "ROM のリセット",
+  "ROM �Υꥻ�å�",
 
   // MSG_MAIN_MENU_9
-  "ゲームに戻る",
+  "���`��ˑ���",
 
   // MSG_MAIN_MENU_10
-  "スリープモード",
+  "����`�ץ�`��",
 
   // MSG_MAIN_MENU_11
-  "TempGBAを終了",
+  "TempGBA��K��",
 
   // MSG_MAIN_MENU_HELP_0
-  FONT_BTN_CIRCLE_GBK ":読み込み   " FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":スロットを変更",
+  FONT_BTN_CIRCLE_GBK ":�i���z��   " FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":�����åȤ���",
 
   // MSG_MAIN_MENU_HELP_1
-  FONT_BTN_CIRCLE_GBK ":保存   " FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":スロットを変更",
+  FONT_BTN_CIRCLE_GBK ":����   " FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":�����åȤ���",
 
   // MSG_MAIN_MENU_HELP_2
-  FONT_BTN_CIRCLE_GBK ":サブメニュー   " FONT_R_TRIGGER_GBK ":ショートカットキー",
+  FONT_BTN_CIRCLE_GBK ":���֥�˥�`   " FONT_R_TRIGGER_GBK ":����`�ȥ��åȥ��`",
 
   // MSG_MAIN_MENU_HELP_3
-  FONT_BTN_CIRCLE_GBK ":サブメニュー",
+  FONT_BTN_CIRCLE_GBK ":���֥�˥�`",
 
   // MSG_MAIN_MENU_HELP_4
-  FONT_BTN_CIRCLE_GBK ":サブメニュー",
+  FONT_BTN_CIRCLE_GBK ":���֥�˥�`",
 
   // MSG_MAIN_MENU_HELP_5
-  FONT_BTN_CIRCLE_GBK ":サブメニュー",
+  FONT_BTN_CIRCLE_GBK ":���֥�˥�`",
 
   // MSG_MAIN_MENU_HELP_6
-  FONT_BTN_CIRCLE_GBK ":サブメニュー",
+  FONT_BTN_CIRCLE_GBK ":���֥�˥�`",
 
   // MSG_MAIN_MENU_HELP_CHEAT
-  FONT_BTN_CIRCLE_GBK ":サブメニュー",
+  FONT_BTN_CIRCLE_GBK ":���֥�˥�`",
 
   // MSG_MAIN_MENU_HELP_7
-  FONT_BTN_CIRCLE_GBK ":ファイルブラウザ   " FONT_L_TRIGGER_GBK ":ショートカットキー",
+  FONT_BTN_CIRCLE_GBK ":�ե�����֥饦��   " FONT_L_TRIGGER_GBK ":����`�ȥ��åȥ��`",
 
   // MSG_MAIN_MENU_HELP_8
-  FONT_BTN_CIRCLE_GBK ":ROM のリセット",
+  FONT_BTN_CIRCLE_GBK ":ROM �Υꥻ�å�",
 
   // MSG_MAIN_MENU_HELP_9
-  FONT_BTN_CIRCLE_GBK ":ゲームに戻る",
+  FONT_BTN_CIRCLE_GBK ":���`��ˑ���",
 
   // MSG_MAIN_MENU_HELP_10
-  FONT_BTN_CIRCLE_GBK ":スリープモードにする",
+  FONT_BTN_CIRCLE_GBK ":����`�ץ�`�ɤˤ���",
 
   // MSG_MAIN_MENU_HELP_11
-  FONT_BTN_CIRCLE_GBK ":エミュレータを終了する",
+  FONT_BTN_CIRCLE_GBK ":���ߥ��`����K�ˤ���",
 
   // MSG_OPTION_MENU_TITLE
-  "パフォーマンスのオプション",
+  "�ѥե��`�ޥ󥹤Υ��ץ����",
 
   // MSG_OPTION_MENU_0
-  "表示モード       : %s",
+  "��ʾ��`��               : %s",
 
   // MSG_OPTION_MENU_1
-  "倍率      : %d%%",
+  "����                     : %d%%",
 
   // MSG_OPTION_MENU_2
-  "双線形フィルタ    : %s",
+  "˫���Υե��륿           : %s",
 
   // MSG_OPTION_MENU_SHOW_FPS
-  "FPS を表示      : %s",
+  "FPS ���ʾ         : %s",
 
   // MSG_OPTION_MENU_3
-  "フレームスキップ方式   : %s",
+  "�ե�`�ॹ���å׷�ʽ   : %s",
 
   // MSG_OPTION_MENU_4
-  "フレームスキップ値  : %d",
+  "�ե�`�ॹ���åׂ�     : %d",
 
   // MSG_OPTION_MENU_5
-  "CPU クロック周波数   : %s",
+  "CPU �����å��ܲ���     : %s",
 
   // MSG_OPTION_MENU_6
-  "音量  : %s",
+  "����               : %s",
 
   // MSG_OPTION_MENU_7
-  "スタックの最適化   : %s",
+  "�����å������m��       : %s",
 
   // MSG_OPTION_MENU_8
-  "BIOS から起動する   : %s",
+  "BIOS �������Ӥ���      : %s",
 
   // MSG_OPTION_MENU_9
-  "バックアップの更新 : %s",
+  "�Хå����åפθ��� : %s",
 
   // MSG_OPTION_MENU_10
-  "言語      : %s",
+  "���Z               : %s",
 
   // MSG_OPTION_MENU_DEFAULT
-  "初期設定に戻す",
+  "�����O���ˑ���",
 
   // MSG_OPTION_MENU_11
-  "戻る",
+  "����",
 
   // MSG_OPTION_MENU_HELP_0
-  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":変更   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":���   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_OPTION_MENU_HELP_1
-  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":変更   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":���   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_OPTION_MENU_HELP_2
-  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":変更   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":���   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_OPTION_MENU_HELP_SHOW_FPS
-  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":変更   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":���   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_OPTION_MENU_HELP_3
-  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":変更   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":���   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_OPTION_MENU_HELP_4
-  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":変更   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":���   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_OPTION_MENU_HELP_5
-  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":変更   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":���   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_OPTION_MENU_HELP_6
-  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":変更   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":���   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_OPTION_MENU_HELP_7
-  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":変更   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":���   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_OPTION_MENU_HELP_8
-  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":変更   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":���   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_OPTION_MENU_HELP_9
-  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":変更   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":���   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_OPTION_MENU_HELP_10
-  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":変更   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":���   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_OPTION_MENU_HELP_DEFAULT
-  FONT_BTN_CIRCLE_GBK ":初期設定に戻す   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_BTN_CIRCLE_GBK ":�����O���ˑ���   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_OPTION_MENU_HELP_11
-  FONT_BTN_CIRCLE_GBK ":メインメニュー   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_BTN_CIRCLE_GBK ":�ᥤ���˥�`   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_OPTION_MENU_BLOCK_CHECKSUM_REUSE
-  "RAM ダイナレックモード : %s",
+  "RAM �����ʥ�å���`�� : %s",
 
   // MSG_OPTION_MENU_HELP_BLOCK_CHECKSUM_REUSE
-  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":変更   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":���   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_OPTION_MENU_HBLANK_IRQ_WIN_START
-  "HBLANK IRQ 開始 : %d",
+  "HBLANK IRQ �_ʼ        : %d",
 
   // MSG_OPTION_MENU_HELP_HBLANK_IRQ_WIN_START
-  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":0=off  1+=最初の走査線   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":0=off  1+=������ߖ˾�   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_OPTION_MENU_HBLANK_IRQ_WIN_END
-  "HBLANK IRQ 終了   : %d",
+  "HBLANK IRQ �K��        : %d",
 
   // MSG_OPTION_MENU_HELP_HBLANK_IRQ_WIN_END
-  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":0=off  1-227=最後の走査線   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":0=off  1-227=������ߖ˾�   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_STATE_MENU_DATE_FMT_0
   "%4d/%2d/%2d %-3s %2d:%02d:%02d",
@@ -219,34 +219,34 @@
   "--/--/---- --- --:--:--",
 
   // MSG_STATE_MENU_STATE_NONE
-  "このスロットにはデータがありません",
+  "���Υ����åȤˤϥǩ`��������ޤ���",
 
   // MSG_STATE_MENU_TITLE
-  "セーブステート",
+  "���`�֥��Ʃ`��",
 
   // MSG_STATE_MENU_0
   "",
 
   // MSG_STATE_MENU_1
-  "ファイルから状態を読み込む   " FONT_L_TRIGGER_GBK,
+  "�ե����뤫��״�B���i���z��   " FONT_L_TRIGGER_GBK,
 
   // MSG_STATE_MENU_2
-  "戻る",
+  "����",
 
   // MSG_STATE_MENU_DELETE
-  "削除",
+  "����",
 
   // MSG_STATE_MENU_HELP_0
-  FONT_BTN_CIRCLE_GBK ":実行   " FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":読み込み/保存   " FONT_BTN_TRIANGLE_GBK ":削除   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_BTN_CIRCLE_GBK ":�g��   " FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":�i���z��/����   " FONT_BTN_TRIANGLE_GBK ":����   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_STATE_MENU_HELP_1
-  FONT_BTN_CIRCLE_GBK ":ファイルブラウザ   " FONT_L_TRIGGER_GBK ":ショートカットキー   "FONT_BTN_CROSS_GBK ":終了",
+  FONT_BTN_CIRCLE_GBK ":�ե�����֥饦��   " FONT_L_TRIGGER_GBK ":����`�ȥ��åȥ��`   "FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_STATE_MENU_HELP_2
-  FONT_BTN_CIRCLE_GBK ":メインメニュー   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_BTN_CIRCLE_GBK ":�ᥤ���˥�`   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_PAD_MENU_TITLE
-  "ゲームパッドの設定",
+  "���`��ѥåɤ��O��",
 
   // MSG_PAD_MENU_0
   FONT_CURSOR_UP_GBK "     : %s",
@@ -285,15 +285,15 @@
   "SELECT : %s",
 
   // MSG_PAD_MENU_12
-  "戻る",
+  "����",
 
   // MSG_PAD_MENU_HELP_0
-  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":変更   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":���   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_PAD_MENU_HELP_1
-  FONT_BTN_CIRCLE_GBK ":メインメニュー   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_BTN_CIRCLE_GBK ":�ᥤ���˥�`   " FONT_BTN_CROSS_GBK ":�K��",
 
-  // PADの設定 コンフィグ
+  // PAD���O�� ����ե���
 
   // MSG_PAD_MENU_CFG_0
   FONT_CURSOR_UP_GBK,
@@ -326,70 +326,70 @@
   "SELECT",
 
   // MSG_PAD_MENU_CFG_10
-  "メインメニュー",
+  "�ᥤ���˥�`",
 
   // MSG_PAD_MENU_CFG_11
-  "早送り",
+  "���ͤ�",
 
   // MSG_PAD_MENU_CFG_12
-  "ロード状態",
+  "���`��״�B",
 
   // MSG_PAD_MENU_CFG_13
-  "状態の保存",
+  "״�B�α���",
 
   // MSG_PAD_MENU_CFG_14
-  "連射 A",
+  "�B�� A",
 
   // MSG_PAD_MENU_CFG_15
-  "連射 B",
+  "�B�� B",
 
   // MSG_PAD_MENU_CFG_16
-  "連射 " FONT_L_TRIGGER_GBK,
+  "�B�� " FONT_L_TRIGGER_GBK,
 
   // MSG_PAD_MENU_CFG_17
-  "連射 " FONT_R_TRIGGER_GBK,
+  "�B�� " FONT_R_TRIGGER_GBK,
 
   // MSG_PAD_MENU_CFG_18
-  "FPS を表示",
+  "FPS ���ʾ",
 
   // MSG_PAD_MENU_CFG_19
-  "なし",
+  "�ʤ�",
 
   // MSG_A_PAD_MENU_TITLE
-  "アナログスティックの設定",
+  "���ʥ������ƥ��å����O��",
 
   // MSG_A_PAD_MENU_0
-  "アナログ " FONT_CURSOR_UP_FILL_GBK " : %s",
+  "���ʥ��� " FONT_CURSOR_UP_FILL_GBK " : %s",
 
   // MSG_A_PAD_MENU_1
-  "アナログ " FONT_CURSOR_DOWN_FILL_GBK " : %s",
+  "���ʥ��� " FONT_CURSOR_DOWN_FILL_GBK " : %s",
 
   // MSG_A_PAD_MENU_2
-  "アナログ " FONT_CURSOR_LEFT_FILL_GBK " : %s",
+  "���ʥ��� " FONT_CURSOR_LEFT_FILL_GBK " : %s",
 
   // MSG_A_PAD_MENU_3
-  "アナログ " FONT_CURSOR_RIGHT_FILL_GBK " : %s",
+  "���ʥ��� " FONT_CURSOR_RIGHT_FILL_GBK " : %s",
 
   // MSG_A_PAD_MENU_4
-  "アナログ入力を有効にする : %s",
+  "���ʥ����������Є��ˤ��� : %s",
 
   // MSG_A_PAD_MENU_5
-  "アナログ感度  : %d",
+  "���ʥ����ж�             : %d",
 
   // MSG_A_PAD_MENU_6
-  "戻る",
+  "����",
 
   // MSG_A_PAD_MENU_HELP_0
-  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":変更   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":���   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_A_PAD_MENU_HELP_1
-  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":変更   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":���   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_A_PAD_MENU_HELP_2
-  FONT_BTN_CIRCLE_GBK ":メインメニュー   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_BTN_CIRCLE_GBK ":�ᥤ���˥�`   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_CHEAT_MENU_TITLE
-  "チート設定",
+  "���`���O��",
 
   // MSG_CHEAT_MENU_NON_LOAD
   "%2d: ------------------------",
@@ -398,55 +398,55 @@
   "%%s %2d: %s",
 
   // MSG_CHEAT_MENU_1
-  "チートファイルを読み込む   " FONT_L_TRIGGER_GBK,
+  "���`�ȥե�������i���z��   " FONT_L_TRIGGER_GBK,
 
   // MSG_CHEAT_MENU_2
-  "戻る",
+  "����",
 
   // MSG_CHEAT_MENU_3
-  "チートページ: %d",
+  "���`�ȥک`��: %d",
 
   // MSG_CHEAT_MENU_HELP_0
-  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":有効にする/無効にする   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":�Є��ˤ���/�o���ˤ���   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_CHEAT_MENU_HELP_1
-  FONT_BTN_CIRCLE_GBK ":チートファイルブラウザ   " FONT_L_TRIGGER_GBK ":ショートカットキー   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_BTN_CIRCLE_GBK ":���`�ȥե�����֥饦��   " FONT_L_TRIGGER_GBK ":����`�ȥ��åȥ��`   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_CHEAT_MENU_HELP_2
-  FONT_BTN_CIRCLE_GBK ":メインメニュー   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_BTN_CIRCLE_GBK ":�ᥤ���˥�`   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_CHEAT_MENU_HELP_3
-  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":ページを変更   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK ":�ک`������   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_NON_LOAD_GAME
-  "ゲームが読み込まれていません",
+  "���`�ब�i���z�ޤ�Ƥ��ޤ���",
 
   // MSG_DAYW_0
-  "日曜日",
+  "��",
 
   // MSG_DAYW_1
-  "月曜日",
+  "��",
 
   // MSG_DAYW_2
-  "火曜日",
+  "��",
 
   // MSG_DAYW_3
-  "水曜日",
+  "ˮ",
 
   // MSG_DAYW_4
-  "木曜日",
+  "ľ",
 
   // MSG_DAYW_5
-  "金曜日",
+  "��",
 
   // MSG_DAYW_6
-  "土曜日",
+  "��",
 
   // MSG_YES
-  "はい",
+  "�Ϥ�",
 
   // MSG_NO
-  "いいえ",
+  "������",
 
   // MSG_ON
   "ON",
@@ -461,28 +461,28 @@
   "OFF ",
 
   // MSG_AUTO
-  "自動",
+  "�Ԅ�",
 
   // MSG_MANUAL
-  "マニュアル",
+  "�ޥ˥奢��",
 
   // MSG_RAM_DYNAREC_FULL_FLUSH
-  "完全なフラッシュ",
+  "��ȫ�ʥե�å���",
 
   // MSG_RAM_DYNAREC_PARTIAL_NO_REUSE
-  "一部再利用不可",
+  "һ�������ò���",
 
   // MSG_RAM_DYNAREC_PARTIAL_WITH_REUSE
-  "部分的 + 再利用",
+  "���ֵ� + ������",
 
   // MSG_EXITONLY
-  "出口専用",
+  "���ڌ���",
 
   // MSG_LOAD
-  "読み込み中",
+  "�i���z��",
 
   // MSG_SAVE
-  "保存",
+  "����",
 
   // MSG_SCN_SCALED_NONE
   "100% GU",
@@ -494,22 +494,22 @@
   "150% SW",
 
   // MSG_SCN_SCALED_USER
-  "ユーザー GU",
+  "��`���` GU",
 
   // MSG_SCN_SCALED_16X9_GU
   "16:9 GU",
 
   // MSG_LANG_JAPANESE
-  "日本語",
+  "�ձ��Z",
 
   // MSG_LANG_ENGLISH
   "English",
 
   // MSG_LANG_CHS
-  "简体中文",
+  "��������",
 
   // MSG_LANG_CHT
-  "繁體中文",
+  "���w����",
 
   // MSG_SS_DATE_FMT_0
   "%04d_%02d_%02d_%s%02d_%02d_%02d_%03d",
@@ -518,77 +518,77 @@
   "%02d_%02d_%04d_%s%02d_%02d_%02d_%03d",
 
   // MSG_ERR_SET_DIR_0
-  "エラー [%s] 指定されたディレクトリが無効です.",
+  "����` [%s] ָ�����줿�ǥ��쥯�ȥ꤬�o���Ǥ�.",
 
   // MSG_ERR_SET_DIR_1
-  "エラー [%s] 指定なし.",
+  "����` [%s] ָ���ʤ�.",
 
   // MSG_ERR_SET_DIR_2
-  "エラーが発生しました. 以下のディレクトリに設定されています:\n%s",
+  "����`���k�����ޤ���. ���¤Υǥ��쥯�ȥ���O������Ƥ��ޤ�:\n%s",
 
   // png.c
   // MSG_ERR_SS_PNG_0
-  "PNG用にメモリを割り当てることができませんでした.",
+  "PNG�ä˥�����굱�Ƥ뤳�Ȥ��Ǥ��ޤ���Ǥ���.",
 
   // MSG_ERR_SS_PNG_1
-  "PNG画像をエンコードできませんでした.",
+  "PNG����򥨥󥳩`�ɤǤ��ޤ���Ǥ���.",
 
   // memory.c
   // MSG_LOADING_ROM
-  "読み込み中...",
+  "�i���z����...",
 
   // MSG_SEARCHING_BACKUP_ID
-  "BACKUP ID を検索中",
+  "BACKUP ID �������",
 
   // main.c
   // MSG_GBA_SLEEP_MODE
-  "スリープモード",
+  "����`�ץ�`��",
 
   // MSG_ERR_LOAD_DIR_INI
-  "dir.ini ファイルを読み込めませんでした.\nすべては次のディレクトリに設定されています:\n%s",
+  "dir.ini �ե�������i���z��ޤ���Ǥ���.\n���٤ƤϴΤΥǥ��쥯�ȥ���O������Ƥ��ޤ�:\n%s",
 
   // MSG_ERR_BIOS_NONE
-  "BIOSイメージファイルを読み込めませんでした.",
+  "BIOS����`���ե�������i���z��ޤ���Ǥ���.",
 
   // MSG_ERR_LOAD_GAMEPACK
-  "ゲームファイルを読み込めませんでした.",
+  "���`��ե�������i���z��ޤ���Ǥ���.",
 
   // MSG_ERR_OPEN_GAMEPACK
-  "ゲームファイルを開くことができませんでした.",
+  "���`��ե�������_�����Ȥ��Ǥ��ޤ���Ǥ���.",
 
   // MSG_ERR_START_CALLBACK_THREAD
-  "コールバックスレッドを起動できませんでした.",
+  "���`��Хå�����åɤ����ӤǤ��ޤ���Ǥ���.",
 
   // sound.c
   // MSG_ERR_RESERVE_AUDIO_CHANNEL
-  "オーディオチャンネルの予約に失敗しました.",
+  "���`�ǥ��������ͥ����s��ʧ�����ޤ���.",
 
   // MSG_ERR_START_SOUND_THREAD
-  "サウンドスレッドを開始できませんでした.",
+  "������ɥ���åɤ��_ʼ�Ǥ��ޤ���Ǥ���.",
 
   // MSG_ERR_MALLOC
-  "メモリを割り当てることができませんでした.",
+  "������굱�Ƥ뤳�Ȥ��Ǥ��ޤ���Ǥ���.",
 
   // MSG_ERR_CONT
-  "いずれかのボタンを押して、続行してください.",
+  "�����줫�Υܥ����Ѻ���ơ��A�Ф��Ƥ�������.",
 
   // MSG_ERR_QUIT
-  "任意のボタンを押して終了してください.",
+  "����Υܥ����Ѻ���ƽK�ˤ��Ƥ�������.",
 
   // MSG_LOAD_STATE_NO
-  "状態スロットの読み込み: %d",
+  "״�B�����åȤ��i���z��: %d",
 
   // MSG_SAVE_STATE_NO
-  "セーブスロット: %d",
+  "���`�֥����å�: %d",
 
   // MSG_LOAD_STATE_AUTO
-  "状態スロットの読み込み: AUTO",
+  "״�B�����åȤ��i���z��: AUTO",
 
   // MSG_SAVE_STATE_AUTO
-  "セーブスロット: AUTO",
+  "���`�֥����å�: AUTO",
 
   // MSG_YES_NO
-  FONT_BTN_CIRCLE_GBK ":はい   " FONT_BTN_CROSS_GBK ":いいえ",
+  FONT_BTN_CIRCLE_GBK ":�Ϥ�   " FONT_BTN_CROSS_GBK ":������",
 
   // MSG_BLANK
   "",
@@ -599,208 +599,208 @@
   FONT_BATTERY0 FONT_BATTERY1 FONT_BATTERY2 FONT_BATTERY3 FONT_GBA_ICON FONT_PSP_ICON FONT_MSC_ICON FONT_KEY_ICON FONT_R_TRIGGER FONT_L_TRIGGER FONT_CURSOR_RIGHT FONT_CURSOR_LEFT FONT_CURSOR_UP FONT_CURSOR_DOWN FONT_CURSOR_RIGHT_FILL FONT_CURSOR_LEFT_FILL FONT_CURSOR_UP_FILL FONT_CURSOR_DOWN_FILL FONT_UP_DIRECTORY,
 
   // MSG_MAIN_MENU_GAMECONFIG
-  "game_config.txt (SMC/アイドル)",
+  "game_config.txt (SMC/�����ɥ�)",
 
   // MSG_MAIN_MENU_EMULATOR
-  "エミュレータのオプション",
+  "���ߥ��`���Υ��ץ����",
 
   // MSG_MAIN_MENU_HELP_GAMECONFIG
-  FONT_BTN_CIRCLE_GBK ":ファイルを開く",
+  FONT_BTN_CIRCLE_GBK ":�ե�������_��",
 
   //MSG_MAIN_MENU_HELP_EMULATOR
-  FONT_BTN_CIRCLE_GBK ":サブメニュー",
+  FONT_BTN_CIRCLE_GBK ":���֥�˥�`",
 
   // MSG_MAIN_MENU_HELP_RETURNTOGAME
-  FONT_BTN_CROSS_GBK ":ゲームに戻る",
+  FONT_BTN_CROSS_GBK ":���`��ˑ���",
 
   // MSG_OPTION_MENU_SCREENSHOT
-  "スクリーンショット    : %s",
+  "������`�󥷥�å� : %s",
 
   // MSG_OPTION_MENU_VIDEORENDER
-  "ビデオレンダラー     : %s",
+  "�ӥǥ�������`         : %s",
 
   // MSG_OPTION_MENU_OAMHIJACKSUPPORT
-  "OAM ハイジャックへの対応 : %s",
+  "OAM �ϥ�����å��ؤΌ��� : %s",
 
   // MSG_OPTION_MENU_VSYNCPSP
-  "VSync (PSP)        : %s",
+  "VSync (PSP)              : %s",
 
   // MSG_OPTION_MENU_THEMES
-  "テーマのプリセット  : %s",
+  "�Ʃ`�ޤΥץꥻ�å� : %s",
 
   // MSG_OPTION_MENU_CUSTOM_COLORS
-  "カスタムカラー",
+  "�������५��`",
 
   // MSG_OPTION_MENU_SWAP_BUTTONS
-  "交換 " FONT_BTN_CIRCLE_GBK "/" FONT_BTN_CROSS_GBK " ボタン: %s",
+  "���Q " FONT_BTN_CIRCLE_GBK "/" FONT_BTN_CROSS_GBK " �ܥ���  : %s",
 
   // MSG_OPTION_MENU_DEFAULT_THEME
-  "デフォルトのテーマに戻す",
+  "�ǥե���ȤΥƩ`�ޤˑ���",
 
   // MSG_OPTION_MENU_DEFAULT_SETTINGS
-  "初期設定に戻す",
+  "�����O���ˑ���",
 
   // MSG_OPTION_MENU_HELP_THEMES
-  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK "テーマを変更する   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK "�Ʃ`�ޤ�������   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_OPTION_MENU_HELP_CUSTOM_COLORS
-  FONT_BTN_CIRCLE_GBK ":サブメニュー   " FONT_BTN_SQUARE_GBK ":項目の色をデフォルトに戻す   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_BTN_CIRCLE_GBK ":���֥�˥�`   " FONT_BTN_SQUARE_GBK ":�Ŀ��ɫ��ǥե���Ȥˑ���   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_OPTION_MENU_HELP_SWAP_BUTTONS
-  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK "交換 " FONT_BTN_CIRCLE_GBK "/" FONT_BTN_CROSS_GBK " 確認ボタン",
+  FONT_CURSOR_LEFT_GBK FONT_CURSOR_RIGHT_GBK "���Q " FONT_BTN_CIRCLE_GBK "/" FONT_BTN_CROSS_GBK " �_�J�ܥ���",
 
   // MSG_OPTION_MENU_HELP_DEFAULT_KEYBIND
-  FONT_BTN_CIRCLE_GBK ":デフォルトのキー設定に戻す   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_BTN_CIRCLE_GBK ":�ǥե���ȤΥ��`�O���ˑ���   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_OPTION_MENU_HELP_DEFAULTKEYBIND
-  FONT_BTN_CIRCLE_GBK ":デフォルトの設定/キーバインドに戻す   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_BTN_CIRCLE_GBK ":�ǥե���Ȥ��O��/���`�Х���ɤˑ���   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_OPTION_MENU_HELP_DEFAULT_THEME
-  FONT_BTN_CIRCLE_GBK ":デフォルトのテーマに戻す   " FONT_BTN_CROSS_GBK ":終了",
+  FONT_BTN_CIRCLE_GBK ":�ǥե���ȤΥƩ`�ޤˑ���   " FONT_BTN_CROSS_GBK ":�K��",
 
   // MSG_TOOLTIP_MAGNIFICATION
-  "表示モードが USER GU の場合に動作します.",
+  "��ʾ��`�ɤ� USER GU �Έ��Ϥ˄������ޤ�.",
 
   // MSG_TOOLTIP_VIDEO_RENDERER
-  "古い: オリジナルのTempGBAに修正を加えたバージョンです.動作は速くなる可能性がありますが、いくつかのバグがあります.\n新着: Libretro gpsp用に書き直しました.より正確になりました.",
+  "�Ť�: ���ꥸ�ʥ��TempGBA��������Ӥ����Щ`�����Ǥ�.\n      �������٤��ʤ�����Ԥ�����ޤ����������Ĥ��ΥХ�������ޤ�.\n����: Libretro gpsp�ä˕���ֱ���ޤ���.������_�ˤʤ�ޤ���.",
 
   // MSG_TOOLTIP_OAM_HIJACKING
-  "新しいレンダラーにのみ適用可能です.\n特定のゲームにおける表示上の不具合を修正しました.",
+  "�¤���������`�ˤΤ��m�ÿ��ܤǤ�.\n�ض��Υ��`��ˤ������ʾ�Ϥβ��ߺϤ��������ޤ���.",
 
   // MSG_TOOLTIP_FRAMESKIP_TYPE
-  "自動: エミュレーターは、必要に応じて自動的にフレームをスキップします.\nマニュアル: エミュレーターは、以下の値に基づいてフレームをスキップします.\nOFF: スキップされたフレームはありません.",
+  "�Ԅ�: ���ߥ��`���`�ϡ���Ҫ�ˏꤸ���ԄӵĤ˥ե�`��򥹥��åפ��ޤ�.\n�ޥ˥奢��: ���ߥ��`���`�ϡ����¤΂��˻��Ť��ƥե�`��򥹥��åפ��ޤ�.\nOFF: �����åפ��줿�ե�`��Ϥ���ޤ���.",
 
   // MSG_TOOLTIP_FRAMESKIP_VALUE
-  "スキップするフレーム数を選択してください (*/10).",
+  "�����åפ���ե�`�������x�k���Ƥ������� (*/10).",
 
   // MSG_TOOLTIP_RAM_DYNAREC_MODE
-  "完全なフラッシュ: 変更があるたびにすべてのRAMを再コンパイルします.安全ですが、処理に時間がかかります.\n一部再利用不可: RAM内の変更されたブロックのみを再コンパイルする.バランスが取れている.\n部分的 + 再利用: データが一致する場合、RAMブロックを保持します.高速ですが、安全性は低くなります.",
+  "��ȫ�ʥե�å���: ��������뤿�Ӥˤ��٤Ƥ�RAM���٥���ѥ��뤷�ޤ�.\n                  ��ȫ�Ǥ������I���˕r�g��������ޤ�.\nһ�������ò���: RAM�ڤΉ�����줿�֥��å��Τߤ��٥���ѥ��뤹��.�Х�󥹤�ȡ��Ƥ���.\n���ֵ� + ������: �ǩ`����һ�¤�����ϡ�RAM�֥��å��򱣳֤��ޤ�.���٤Ǥ�������ȫ�Ԥϵͤ��ʤ�ޤ�.",
 
   // MSG_TOOLTIP_HBLANK_WIN_START
-  "H-Blankは、一部のゲームでエフェクトを表示するために使用されます.\n開始行を選択してください. 0=OFF",
+  "H-Blank�ϡ�һ���Υ��`��ǥ��ե����Ȥ��ʾ���뤿���ʹ�ä���ޤ�.\n�_ʼ�Ф��x�k���Ƥ�������. 0=OFF",
 
   // MSG_TOOLTIP_HBLANK_WIN_END
-  "H-Blankは、一部のゲームでエフェクトを表示するために使用されます.\n終了行を選択してください. 0=OFF | 1-160=表示領域 | 161-227=V-Blank",
+  "H-Blank�ϡ�һ���Υ��`��ǥ��ե����Ȥ��ʾ���뤿���ʹ�ä���ޤ�.\n�K���Ф��x�k���Ƥ�������. 0=OFF | 1-160=��ʾ�I�� | 161-227=V-Blank",
 
   // MSG_TOOLTIP_STACK_OPTIMIZE
-  "自動: アイドルループを積み重ね、一括でスキップします.高速です.\nOFF: すべてのループは通常通りエミュレートされます.正確ですが、処理速度は遅くなります.",
+  "�Ԅ�: �����ɥ��`�פ�e���ؤ͡�һ���ǥ����åפ��ޤ�.���٤Ǥ�.\nOFF: ���٤ƤΥ�`�פ�ͨ��ͨ�ꥨ�ߥ��`�Ȥ���ޤ�.\n���_�Ǥ������I���ٶȤ��W���ʤ�ޤ�.",
 
   // MSG_TOOLTIP_AUTO_BACKUP
-  "セーブファイルをいつ作成するか.\n自動: ゲーム内でセーブするたびに.\n出口専用: エミュレータを終了すると、セーブファイルが保存されます.",
+  "���`�֥ե�����򤤤����ɤ��뤫.\n�Ԅ�: ���`���ڤǥ��`�֤��뤿�Ӥ�.\n���ڌ���: ���ߥ��`����K�ˤ���ȡ����`�֥ե����뤬���椵��ޤ�.",
 
   // MSG_EMULATOR_MENU_TITLE
-  "エミュレータのオプション",
+  "���ߥ��`���Υ��ץ����",
 
   // MSG_PREVIEW_TITLE
   "TempGBA",
 
   // MSG_PREVIEW_ITEM_0
-  "ロード状態",
+  "���`��״�B",
 
   // MSG_PREVIEW_ITEM_1
-  "セーブデータ",
+  "���`�֥ǩ`��",
 
   // MSG_PREVIEW_ITEM_2
-  "設定",
+  "�O��",
 
   // MSG_PREVIEW_ITEM_3
-  "チート",
+  "���`��",
 
   // MSG_PREVIEW_ITEM_4
-  "終了",
+  "�K��",
 
   // // MSG_PREVIEW_ITEM_HELP
-  FONT_BTN_CIRCLE_GBK ":確認   " FONT_BTN_CROSS_GBK ":キャンセル/戻る",
+  FONT_BTN_CIRCLE_GBK ":�_�J   " FONT_BTN_CROSS_GBK ":����󥻥�/����",
 
   // MSG_PREVIEW_ITEM_TOOLTIP
-  "設定を変更するには、ここを選択してください",
+  "�O������Ϥ������x�k���Ƥ�������",
 
   // MSG_THEMES_OG
-  "原文",
+  "ԭ��",
 
   // MSG_THEMES_DARK
-  "ダーク",
+  "���`��",
 
   // MSG_THEMES_LIGHT
-  "光",
+  "��",
 
   // MSG_THEMES_BLUE
-  "青",
+  "��",
 
   // MSG_THEMES_GREEN
-  "緑",
+  "�v",
 
   // MSG_THEMES_RED
-  "赤",
+  "��",
 
   // MSG_THEMES_PURPLE
-  "紫",
+  "��",
 
   // MSG_THEMES_HIGH_CONTRAST
-  "高コントラスト",
+  "�ߥ���ȥ饹��",
 
   // MSG_THEMES_RETRO
   "Retro",
 
   // MSG_CUSTOM_COLOR_BG
-  "背景",
+  "����",
 
   // MSG_CUSTOM_COLOR_ROM_INFO
-  "ROM 情報",
+  "ROM ���",
 
   // MSG_CUSTOM_COLOR_ACTIVE_ITEM
-  "選択中の項目",
+  "�x�k�Ф��Ŀ",
 
   // MSG_CUSTOM_COLOR_INACTIVE_ITEM
-  "非アクティブな項目",
+  "�ǥ����ƥ��֤��Ŀ",
 
   // MSG_CUSTOM_COLOR_TOOLTIP_TEXT
-  "ツールチップのテキスト",
+  "�ĩ`����åפΥƥ�����",
 
   // MSG_CUSTOM_COLOR_HELP_TEXT
-  "ヘルプテキスト",
+  "�إ�ץƥ�����",
 
   // MSG_CUSTOM_COLOR_INACTIVE_DIR
-  "非アクティブなディレクトリ",
+  "�ǥ����ƥ��֤ʥǥ��쥯�ȥ�",
 
   // MSG_CUSTOM_COLOR_SCROLL_BAR
-  "スクロールバー",
+  "�������`��Щ`",
 
   // MSG_CUSTOM_COLOR_BATT_NORMAL
-  "バッテリーは正常です",
+  "�Хåƥ�`�������Ǥ�",
 
   // MSG_CUSTOM_COLOR_BATT_LOW
-  "バッテリー残量が少ない",
+  "�Хåƥ�`�������٤ʤ�",
 
   // MSG_CUSTOM_COLOR_BATT_CHARG
-  "バッテリーの充電",
+  "�Хåƥ�`�γ��",
 
   // MSG_CUSTOM_COLOR_HELP_ITEM
-  FONT_BTN_CIRCLE_GBK ":確認   " FONT_BTN_SQUARE_GBK ":既定の色に戻す   " FONT_BTN_CROSS_GBK ":キャンセル/戻る",
+  FONT_BTN_CIRCLE_GBK ":�_�J   " FONT_BTN_SQUARE_GBK ":�ȶ���ɫ�ˑ���   " FONT_BTN_CROSS_GBK ":����󥻥�/����",
 
   // MSG_PICKER_OLD
-  "古い",
+  "�Ť�",
 
   // MSG_PICKER_NEW
-  "新着",
+  "����",
 
   // MSG_PICKER_CONTROLS
-  FONT_CURSOR_LEFT_GBK FONT_CURSOR_UP_GBK FONT_CURSOR_DOWN_GBK FONT_CURSOR_RIGHT_GBK ":明度/彩度   " FONT_L_TRIGGER_GBK "/" FONT_R_TRIGGER_GBK ":色相",
+  FONT_CURSOR_LEFT_GBK FONT_CURSOR_UP_GBK FONT_CURSOR_DOWN_GBK FONT_CURSOR_RIGHT_GBK ":����/�ʶ�   " FONT_L_TRIGGER_GBK "/" FONT_R_TRIGGER_GBK ":ɫ��",
 
   // MSG_SWAP_BUTTONS_O_CONFIRMS
-  FONT_BTN_CIRCLE_GBK " 確認する",
+  FONT_BTN_CIRCLE_GBK " �_�J����",
 
   // MSG_SWAP_BUTTONS_X_CONFIRMS
-  FONT_BTN_CROSS_GBK " 確認する",
+  FONT_BTN_CROSS_GBK " �_�J����",
 
   // MSG_LANG_ITA
   "Italiano",
 
   // MSG_RENDERER_OLD
-  "古い",
+  "�Ť�",
 
   // MSG_RENDERER_NEW
-  "新しい",
+  "�¤���",
 
   // MSG_FMT_PNG
   "PNG",
@@ -854,21 +854,21 @@
   "100",
 
   // MSG_AUTO_SAVESTATE_LOAD_PROMPT
-  "自動セーブ状態を読み込む?",
+  "�Ԅӥ��`��״�B���i���z��?",
 
   // MSG_LOAD_ROM_AND_STATE
-  "%sを読み込み、セーブステートを保存する?",
+  "%s���i���z�ߡ����`�֥��Ʃ`�Ȥ򱣴椹��?",
 
   // MSG_LOAD_STATE_FILE
-  "セーブステートファイルを読み込む?",
+  "���`�֥��Ʃ`�ȥե�������i���z��?",
 
   // MSG_ERR_ROM_NOT_FOUND
-  "ROM ファイルが見つかりません",
+  "ROM �ե����뤬Ҋ�Ĥ���ޤ���",
 
   // MSG_BROWSER_RECENT_GAMES
-  "--- 最近のゲーム ---",
+  "--- ����Υ��`�� ---",
 
   // MSG_BROWSER_ALL_GAMES
-  "--- すべてのゲーム ---",
+  "--- ���٤ƤΥ��`�� ---",
 
 },
