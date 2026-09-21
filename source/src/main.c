@@ -881,6 +881,7 @@ int user_main(int argc, char *argv[])
   char load_filename[MAX_FILE];
   const char *file_ext[] = { ".zip", ".gba", ".bin", ".agb", ".gbz", NULL };
   u32 rom_loaded = 0;
+  u32 prepared_by_menu = 0;
 
   setup_main((argc > 0 && argv[0] != NULL) ? argv[0] : NULL);
 
@@ -911,7 +912,11 @@ int user_main(int argc, char *argv[])
       {
         clear_screen(COLOR32_BLACK);
         error_msg(MSG[MSG_ERR_LOAD_GAMEPACK], CONFIRMATION_CONT);
-        menu();
+        if (menu() != 0)
+        {
+          rom_loaded = 1;
+          prepared_by_menu = 1;
+        }
       }
       else
       {
@@ -921,13 +926,23 @@ int user_main(int argc, char *argv[])
     }
     else if (load_file(file_ext, load_filename, dir_roms, 1) < 0)
     {
-      menu();
+      /* Left the startup browser for the menu. menu() returns 1 if a ROM
+         was loaded there; ignore that and main() exits after the prompt. */
+      if (menu() != 0)
+      {
+        rom_loaded = 1;
+        prepared_by_menu = 1;
+      }
     }
     else if (load_gamepak(load_filename) < 0)
     {
       clear_screen(COLOR32_BLACK);
       error_msg(MSG[MSG_ERR_LOAD_GAMEPACK], CONFIRMATION_CONT);
-      menu();
+      if (menu() != 0)
+      {
+        rom_loaded = 1;
+        prepared_by_menu = 1;
+      }
     }
     else
     {
@@ -938,7 +953,8 @@ int user_main(int argc, char *argv[])
 
   if (rom_loaded)
   {
-    reset_gba();
+    if (!prepared_by_menu)
+      reset_gba();
 
     set_cpu_clock(option_clock_speed);
 
@@ -951,7 +967,8 @@ int user_main(int argc, char *argv[])
     execute_arm_translate(reg[EXECUTE_CYCLES]);
   }
 
-  /* If we get here, menu() returned without loading a ROM */
+  /* Menu returned without a ROM (or startup never loaded one). */
+  quit();
   return 0;
 }
 
