@@ -588,10 +588,7 @@ static void synchronize(void)
     if (reg[CPU_HALT_STATE] == CPU_STOP)
     {
       clear_screen(0);
-      if (option_language == 0)
-        print_string(MSG[MSG_GBA_SLEEP_MODE], X_POS_CENTER, 130, color_active_item, BG_NO_FILL);
-      else
-        print_string_gbk(MSG[MSG_GBA_SLEEP_MODE], X_POS_CENTER, 130, color_active_item, BG_NO_FILL);
+      print_string(MSG[MSG_GBA_SLEEP_MODE], X_POS_CENTER, 130, color_active_item, BG_NO_FILL);
     }
 
     // PSP controller - hold
@@ -612,17 +609,11 @@ static void synchronize(void)
   {
     if (psp_fps_debug != 0)
     {
-      if (option_language == 0)
-        print_string(MSG[MSG_TURBO], 0, 12, COLOR15_WHITE, COLOR15_BLACK);
-      else
-        print_string_gbk(MSG[MSG_TURBO], 0, 12, COLOR15_WHITE, COLOR15_BLACK);
+      print_string(MSG[MSG_TURBO], 0, 12, COLOR15_WHITE, COLOR15_BLACK);
     }
     else
     {
-      if (option_language == 0)
-        print_string(MSG[MSG_TURBO], 0, 0, COLOR15_WHITE, COLOR15_BLACK);
-      else
-        print_string_gbk(MSG[MSG_TURBO], 0, 0, COLOR15_WHITE, COLOR15_BLACK);
+      print_string(MSG[MSG_TURBO], 0, 0, COLOR15_WHITE, COLOR15_BLACK);
     }
     used_frameskip_type = FRAMESKIP_MANUAL;
     used_frameskip_value = 4;
@@ -757,6 +748,30 @@ static int load_ku_bridge_prx(int devkit_version)
 }
 
 
+static int load_cp_fix_gbk_prx(void)
+{
+  SceUID mod;
+  char prx_path[MAX_PATH];
+
+  sprintf(prx_path, "%scp_fix_gbk.prx", main_path);
+
+  if ((mod = sceKernelLoadModule(prx_path, 0, NULL)) >= 0)
+  {
+    int status;
+
+    if (sceKernelStartModule(mod, 0, 0, &status, NULL) < 0)
+    {
+      sceKernelUnloadModule(mod);
+      return -1;
+    }
+
+    return 0;
+  }
+
+  return -1;
+}
+
+
 static void load_setting_cfg(void)
 {
   char filename[MAX_FILE];
@@ -853,6 +868,10 @@ static void setup_main(const char *eboot_path)
   enable_home_menu = 1;
 
   load_config_file();
+  /* GBK filename hook remaps CP932→CP936. Only load it for Chinese UI
+     so Japanese CP932 filenames keep working. */
+  if (option_language == 2 || option_language == 3)
+    load_cp_fix_gbk_prx();
   load_theme_config();
   load_recent_roms();
 
@@ -1224,14 +1243,7 @@ u32 yesno_dialog(const char *text)
 
   draw_popup_frame_auto(popup_x, popup_y, popup_w, popup_h);
 
-  if (option_language == 0)
-  {
-    print_string(text, X_POS_CENTER, popup_y + 16, color_active_item, BG_NO_FILL);
-  }
-  else
-  {
-    print_string_gbk(text, X_POS_CENTER, popup_y + 16, color_active_item, BG_NO_FILL);
-  }
+  print_string(text, X_POS_CENTER, popup_y + 16, color_active_item, BG_NO_FILL);
   print_swap_aware(MSG[MSG_YES_NO], X_POS_CENTER, popup_y + 46, color_active_item, BG_NO_FILL);
 
   flip_screen(1);

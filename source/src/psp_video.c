@@ -632,30 +632,15 @@ void print_string(const char *str, s16 x, u16 y, u16 fg_color, s16 bg_color)
 {
   if (x < 0) x = (PSP_SCREEN_WIDTH - (strlen(str) * FONTWIDTH)) >> 1;
 
-  mh_print(str, x, y, fg_color, bg_color, (u16 *)((u32)draw_frame | 0x44000000), PSP_LINE_SIZE);
+  ch_print(str, x, y, fg_color, bg_color, (u16 *)((u32)draw_frame | 0x44000000), PSP_LINE_SIZE);
 }
 
 void print_string_ext(const char *str, s16 x, u16 y, u16 fg_color, s16 bg_color, void *_dest_ptr, u16 pitch)
 {
   if (x < 0) x = (pitch - (strlen(str) * FONTWIDTH)) >> 1;
 
-  mh_print(str, x, y, fg_color, bg_color, _dest_ptr, pitch);
-}
-
-void print_string_gbk(const char *str, s16 x, u16 y, u16 fg_color, s16 bg_color)
-{
-  if (x < 0) x = (PSP_SCREEN_WIDTH - (strlen(str) * FONTWIDTH)) >> 1;
-
-  ch_print(str, x, y, fg_color, bg_color, (u16 *)((u32)draw_frame | 0x44000000), PSP_LINE_SIZE);
-}
-
-void print_string_ext_gbk(const char *str, s16 x, u16 y, u16 fg_color, s16 bg_color, void *_dest_ptr, u16 pitch)
-{
-  if (x < 0) x = (pitch - (strlen(str) * FONTWIDTH)) >> 1;
-
   ch_print(str, x, y, fg_color, bg_color, _dest_ptr, pitch);
 }
-
 static void load_volume_icon(int devkit_version)
 {
   if (devkit_version >= 0x03050210)

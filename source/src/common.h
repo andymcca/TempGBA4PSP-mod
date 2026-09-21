@@ -152,7 +152,6 @@ typedef u32 FIXED08_24;
 
 #include "cheats.h"
 
-#include "mh_print.h"
 #include "ch_print.h"
 #include "gui.h"
 
