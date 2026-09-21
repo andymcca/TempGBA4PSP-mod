@@ -48,7 +48,7 @@ It remains a homebrew GBA emulator — you need a legal BIOS dump (`gba_bios.bin
 - **Carousel mode** — Alternative 3D-style ROM browser with boxart and savestate screenshot previews. Folders can also display boxart using the separate `folder_boxart_directory` setting in `dir.ini`. Toggle between list view and carousel view in the file browser.
 - **Recent ROMs** — Up to 5 recently played games appear at the top of the file browser for quick re-launch. Saved automatically between sessions.
 - **Internationalization** — menu strings in **Japanese, English, Simplified Chinese, Traditional Chinese, and Italian**.
-- Chinese filename support via GBK codepage plugin (approach from [eleqian's TempGBA4PSP-cc](https://github.com/lakent/TempGBA4PSP-cc)).
+- **GBK filenames** — `make` builds `cp_fix_gbk.prx` next to the EBOOT (from [eleqian’s TempGBA4PSP-cc](https://github.com/lakent/TempGBA4PSP-cc)). Ship it beside `EBOOT.PBP`. It is loaded only when the UI language is Simplified or Traditional Chinese, so Japanese CP932 filenames are left alone. Menu text still works if the PRX is missing.
 - **Confirm button swap** — choose **O confirms** or **X confirms** (PSP-region style). Older `tempgba.cfg` files written before these slots were added still load correctly.
 - **Savestates** — 10 manual slots plus an automatic slot that saves when you exit the emulator, put the PSP to sleep, load a new ROM, or load a different savestate. 
 - **Savestate UX** — details save/load fixes; leaving the menu after state operations behaves more predictably.

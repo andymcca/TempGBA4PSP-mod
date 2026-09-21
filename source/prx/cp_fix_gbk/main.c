@@ -34,7 +34,7 @@ PSP_MODULE_INFO("cp_fix_gbk", 0x1007, 1, 0);
 }
 
 int (*sceCodepage_set_cp)(u32 cp);
-u32 last_cp = 0xff;
+static u32 last_cp = 0xff;
 
 int sceCodepage_set_cp_pathed(u32 cp)
 {
@@ -44,6 +44,7 @@ int sceCodepage_set_cp_pathed(u32 cp)
     if (last_cp == cp) {
         return 0;
     }
+    last_cp = cp;
     return sceCodepage_set_cp(cp);
 }
 

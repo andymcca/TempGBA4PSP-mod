@@ -763,9 +763,36 @@ static void update_title_scroll(u32 hash)
     }
 }
 
+/* GBK/Shift-JIS lead bytes. Byte-wise clip/scroll can split a glyph. */
+static int string_has_gbk(const char *str)
+{
+    const u8 *p = (const u8 *)str;
+
+    if (str == NULL)
+        return 0;
+
+    while (*p != '\0')
+    {
+        if (*p >= 0x81 && *p <= 0xFE)
+            return 1;
+        p++;
+    }
+    return 0;
+}
+
 static void print_string_scroll(const char *str, u32 x, u32 y, u16 color, u16 bg, u32 max_chars, s32 scroll_offset)
 {
-    u32 len = strlen(str);
+    u32 len;
+    u32 start;
+    u32 clip_len;
+    char buf[256];
+
+    if (string_has_gbk(str)) {
+        print_string(str, x, y, color, bg);
+        return;
+    }
+
+    len = strlen(str);
     if (len == 0) return;
 
     if (len <= max_chars) {
@@ -773,13 +800,12 @@ static void print_string_scroll(const char *str, u32 x, u32 y, u16 color, u16 bg
         return;
     }
 
-    u32 start = (u32)scroll_offset;
+    start = (u32)scroll_offset;
     if (start >= len) start = len - 1;
-    u32 clip_len = len - start;
+    clip_len = len - start;
     if (clip_len > max_chars) clip_len = max_chars;
     if (clip_len >= 256) clip_len = 255;
 
-    char buf[256];
     memcpy(buf, str + start, clip_len);
     buf[clip_len] = '\0';
 
@@ -789,7 +815,15 @@ static void print_string_scroll(const char *str, u32 x, u32 y, u16 color, u16 bg
 /* Clip any string to max_chars width — used for non-selected items */
 static void print_string_clipped(const char *str, u32 x, u32 y, u16 color, u16 bg, u32 max_chars)
 {
-    u32 len = strlen(str);
+    u32 len;
+    char buf[256];
+
+    if (string_has_gbk(str)) {
+        print_string(str, x, y, color, bg);
+        return;
+    }
+
+    len = strlen(str);
     if (len == 0) return;
 
     if (len <= max_chars) {
@@ -799,7 +833,6 @@ static void print_string_clipped(const char *str, u32 x, u32 y, u16 color, u16 b
 
     if (max_chars >= 256) max_chars = 255;
 
-    char buf[256];
     memcpy(buf, str, max_chars);
     buf[max_chars] = '\0';
 
@@ -2819,7 +2852,17 @@ static void print_menu_line(const char *str, s16 x, s16 y, u16 fg, s16 bg)
 
 static void print_menu_line_scroll(const char *str, s16 x, s16 y, u16 fg, s16 bg, u32 max_chars, s32 scroll_offset)
 {
-    u32 len = strlen(str);
+    u32 len;
+    u32 start;
+    u32 clip_len;
+    char buf[256];
+
+    if (string_has_gbk(str)) {
+        print_menu_line(str, x, y, fg, bg);
+        return;
+    }
+
+    len = strlen(str);
     if (len == 0) return;
 
     if (len <= max_chars) {
@@ -2827,13 +2870,12 @@ static void print_menu_line_scroll(const char *str, s16 x, s16 y, u16 fg, s16 bg
         return;
     }
 
-    u32 start = (u32)scroll_offset;
+    start = (u32)scroll_offset;
     if (start >= len) start = len - 1;
-    u32 clip_len = len - start;
+    clip_len = len - start;
     if (clip_len > max_chars) clip_len = max_chars;
     if (clip_len >= 256) clip_len = 255;
 
-    char buf[256];
     memcpy(buf, str + start, clip_len);
     buf[clip_len] = '\0';
 
@@ -2842,7 +2884,15 @@ static void print_menu_line_scroll(const char *str, s16 x, s16 y, u16 fg, s16 bg
 
 static void print_menu_line_clipped(const char *str, s16 x, s16 y, u16 fg, s16 bg, u32 max_chars)
 {
-    u32 len = strlen(str);
+    u32 len;
+    char buf[256];
+
+    if (string_has_gbk(str)) {
+        print_menu_line(str, x, y, fg, bg);
+        return;
+    }
+
+    len = strlen(str);
     if (len == 0) return;
 
     if (len <= max_chars) {
@@ -2852,7 +2902,6 @@ static void print_menu_line_clipped(const char *str, s16 x, s16 y, u16 fg, s16 b
 
     if (max_chars >= 256) max_chars = 255;
 
-    char buf[256];
     memcpy(buf, str, max_chars);
     buf[max_chars] = '\0';
 

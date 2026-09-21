@@ -849,9 +849,6 @@ static void setup_main(const char *eboot_path)
 
   find_main_path(eboot_path);
 
-  /* Load codepage patch so file I/O works with GBK/Chinese filenames */
-  load_cp_fix_gbk_prx();
-
   sceKernelRegisterSubIntrHandler(PSP_VBLANK_INT, 0, vblank_interrupt_handler, NULL);
   sceKernelEnableSubIntr(PSP_VBLANK_INT, 0);
 
@@ -865,6 +862,10 @@ static void setup_main(const char *eboot_path)
   enable_home_menu = 1;
 
   load_config_file();
+  /* GBK filename hook remaps CP932→CP936. Only load it for Chinese UI
+     so Japanese CP932 filenames keep working. */
+  if (option_language == 2 || option_language == 3)
+    load_cp_fix_gbk_prx();
   load_theme_config();
   load_recent_roms();
 
