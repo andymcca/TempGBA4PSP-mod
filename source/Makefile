@@ -22,10 +22,10 @@ EXTRA_TARGETS = EBOOT.PBP
 COMMON_FILE = \
  common.h \
  cpu.h memory.h video.h psp_video.h input.h sound.h main.h message.h gui.h zip.h png.h \
- ku_bridge.h exception.h ch_print.h
+ ku_bridge.h exception.h ch_print.h me_shared.h me_video.h
 
 MAINOBJS = \
- cpu.o memory.o video_dispatch.o video_cc_wrap.o video_old_wrap.o psp_video.o input.o sound.o main.o message.o gui.o zip.o png.o \
+ cpu.o memory.o video_dispatch.o video_cc_wrap.o video_old_wrap.o me_video.o psp_video.o input.o sound.o main.o message.o gui.o zip.o png.o \
  mips_stub.o video_blend_mips.o \
  ku_bridge.o exception.o cheats.o ch_print.o \
  boxart.o power_lifecycle.o
@@ -65,3 +65,5 @@ all: $(EXTRA_TARGETS)
 	@cp prx/exceptionHandler/prx/exception.prx .
 	@$(MAKE) -C prx/cp_fix_gbk
 	@cp prx/cp_fix_gbk/cp_fix_gbk.prx .
+	@$(MAKE) -C prx/me
+	@cp prx/me/tempgba_me.prx .

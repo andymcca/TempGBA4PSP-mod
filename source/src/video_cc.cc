@@ -19,7 +19,12 @@
  */
 
 extern "C" {
+#ifdef ME_PRX_BUILD
+  #include "me_render_env.h"
+#else
   #include "common.h"
+  #include "me_video.h"
+#endif
 }
 
 extern u32 option_oam_hijacking_enabled;  // Emulator option for OAM hijacking
@@ -2577,6 +2582,33 @@ static const u8 active_layers[] = {
   0,
 };
 
+// Steps the affine reference points to the next line, accounting for the
+// vertical mosaic effect.
+static void affine_advance(u32 vcount)
+{
+  const u32 bgmosv = ((read_ioreg(REG_MOSAIC) >> 4) & 0xF) + 1;
+
+  if (read_ioreg(REG_BG2CNT) & 0x40) {   // Mosaic enabled for this BG
+    if ((vcount % bgmosv) == bgmosv-1) { // Correct after the last line
+      affine_reference_x[0] += (s16)read_ioreg(REG_BG2PB) * bgmosv;
+      affine_reference_y[0] += (s16)read_ioreg(REG_BG2PD) * bgmosv;
+    }
+  } else {
+    affine_reference_x[0] += (s16)read_ioreg(REG_BG2PB);
+    affine_reference_y[0] += (s16)read_ioreg(REG_BG2PD);
+  }
+
+  if (read_ioreg(REG_BG3CNT) & 0x40) {
+    if ((vcount % bgmosv) == bgmosv-1) {
+      affine_reference_x[1] += (s16)read_ioreg(REG_BG3PB) * bgmosv;
+      affine_reference_y[1] += (s16)read_ioreg(REG_BG3PD) * bgmosv;
+    }
+  } else {
+    affine_reference_x[1] += (s16)read_ioreg(REG_BG3PB);
+    affine_reference_y[1] += (s16)read_ioreg(REG_BG3PD);
+  }
+}
+
 void update_scanline(void)
 {
   u32 pitch = get_screen_pitch();
@@ -2587,6 +2619,27 @@ void update_scanline(void)
 
   if(skip_next_frame)
     return;
+
+#ifndef ME_PRX_BUILD
+  // "New (ME)": record the line for the Media Engine instead of drawing it.
+  // The affine counters still advance, so the next line records the value
+  // this renderer would have drawn it with.
+  if (me_capture_buf != NULL && vcount < 160)
+  {
+    int *aff = me_capture_buf->affine[vcount];
+
+    memcpy(me_capture_buf->ioregs[vcount], io_registers,
+           ME_CAP_IOREGS * sizeof(u16));
+    aff[0] = affine_reference_x[0];
+    aff[1] = affine_reference_x[1];
+    aff[2] = affine_reference_y[0];
+    aff[3] = affine_reference_y[1];
+
+    if (video_mode)
+      affine_advance(vcount);
+    return;
+  }
+#endif
 
   // If OAM has been modified since the last scanline has been updated then
   // reorder and reprofile the OBJ lists.
@@ -2605,32 +2658,11 @@ void update_scanline(void)
     render_scanline_window(screen_offset);
   
   // Mode 0 does not use any affine params at all.
-  if (video_mode) {
-    // Account for vertical mosaic effect, by correcting affine references.
-    const u32 bgmosv = ((read_ioreg(REG_MOSAIC) >> 4) & 0xF) + 1;
-
-    if (read_ioreg(REG_BG2CNT) & 0x40) {   // Mosaic enabled for this BG
-      if ((vcount % bgmosv) == bgmosv-1) { // Correct after the last line
-        affine_reference_x[0] += (s16)read_ioreg(REG_BG2PB) * bgmosv;
-        affine_reference_y[0] += (s16)read_ioreg(REG_BG2PD) * bgmosv;
-      }
-    } else {
-      affine_reference_x[0] += (s16)read_ioreg(REG_BG2PB);
-      affine_reference_y[0] += (s16)read_ioreg(REG_BG2PD);
-    }
-
-    if (read_ioreg(REG_BG3CNT) & 0x40) {
-      if ((vcount % bgmosv) == bgmosv-1) {
-        affine_reference_x[1] += (s16)read_ioreg(REG_BG3PB) * bgmosv;
-        affine_reference_y[1] += (s16)read_ioreg(REG_BG3PD) * bgmosv;
-      }
-    } else {
-      affine_reference_x[1] += (s16)read_ioreg(REG_BG3PB);
-      affine_reference_y[1] += (s16)read_ioreg(REG_BG3PD);
-    }
-  }
+  if (video_mode)
+    affine_advance(vcount);
 }
 
+#ifndef ME_PRX_BUILD
 #define VIDEO_SAVESTATE_BODY(type) \
   FILE_##type##_ARRAY(savestate_file, affine_reference_x); \
   FILE_##type##_ARRAY(savestate_file, affine_reference_y);
@@ -2644,4 +2676,5 @@ void video_write_mem_savestate(SceUID savestate_file)
 {
   VIDEO_SAVESTATE_BODY(WRITE_MEM);
 }
+#endif
 

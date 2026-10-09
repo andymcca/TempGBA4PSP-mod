@@ -178,7 +178,7 @@ static const char *enable_disable_options[2];
 static const char *clock_speed_options[4];
 static const char *sound_volume_options[11];
 static const char *image_format_options[2];
-static const char *video_renderer_options[2];
+static const char *video_renderer_options[3];
 static const char *ram_dynarec_options[3];
 static const char *swap_button_options[2];
 static const char *theme_preset_options[9];
@@ -234,6 +234,7 @@ static void init_choice_arrays(void)
 
     video_renderer_options[0] = MSG[MSG_RENDERER_OLD];
     video_renderer_options[1] = MSG[MSG_RENDERER_NEW];
+    video_renderer_options[2] = "New (ME)";
 
     ram_dynarec_options[0] = MSG[MSG_RAM_DYNAREC_FULL_FLUSH];
     ram_dynarec_options[1] = MSG[MSG_RAM_DYNAREC_PARTIAL_NO_REUSE];
@@ -4160,7 +4161,7 @@ u32 menu(void)
     NUMERIC_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_1], &option_screen_mag, 201, MSG_OPTION_MENU_HELP_1, 1,MSG_TOOLTIP_MAGNIFICATION, MSG_OPTION_MENU_1),
     STRING_SELECTION_OPTION(NULL, MSG[MSG_OPTION_MENU_2], on_off_options, &option_screen_filter, 2, MSG_OPTION_MENU_HELP_2, 2, MSG_OPTION_MENU_2),
 
-    STRING_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_VIDEORENDER], video_renderer_options, &option_video_renderer, 2, MSG_OPTION_MENU_HELP_7, 4, MSG_TOOLTIP_VIDEO_RENDERER, MSG_OPTION_MENU_VIDEORENDER),
+    STRING_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_VIDEORENDER], video_renderer_options, &option_video_renderer, 3, MSG_OPTION_MENU_HELP_7, 4, MSG_TOOLTIP_VIDEO_RENDERER, MSG_OPTION_MENU_VIDEORENDER),
     STRING_SELECTION_OPTION_TT(NULL, MSG[MSG_OPTION_MENU_OAMHIJACKSUPPORT], on_off_options, &option_oam_hijacking_enabled, 2, MSG_OPTION_MENU_HELP_7, 5, MSG_TOOLTIP_OAM_HIJACKING, MSG_OPTION_MENU_OAMHIJACKSUPPORT),
     STRING_SELECTION_OPTION(NULL, MSG[MSG_OPTION_MENU_VSYNCPSP], on_off_options, &option_psp_vsync, 2, MSG_OPTION_MENU_HELP_7, 6,MSG_OPTION_MENU_VSYNCPSP),
     
@@ -5120,7 +5121,7 @@ s32 load_config_file(void)
           option_ram_dynarec_policy = RAM_DYNAREC_PARTIAL_WITH_REUSE;
         }
       }
-      option_video_renderer           = file_options[10] % 2;
+      option_video_renderer           = file_options[10] % 3;
       option_oam_hijacking_enabled    = file_options[11] % 2;
       option_boot_mode                = file_options[12] % 2;
       option_update_backup            = file_options[13] % 2;

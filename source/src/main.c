@@ -21,6 +21,7 @@
 
 #include "common.h"
 #include "power_lifecycle.h"
+#include "me_video.h"
 
 static PowerLifecycle psp_power_lifecycle;
 static u32 sleep_reopen_gamepak = 0;
@@ -425,7 +426,7 @@ u32 update_gba(void)
           // END TEST CRASH HANDLER
           // ===================================================================
 
-          if (!skip_next_frame)
+          if (!skip_next_frame && !me_video_frame())
             (*update_screen)();
 
           update_gbc_sound(cpu_ticks);
@@ -1014,6 +1015,7 @@ void quit(void)
   update_backup_immediately();
   save_config_file();
 
+  me_video_shutdown();
   sound_term();
   memory_term();
   video_term();

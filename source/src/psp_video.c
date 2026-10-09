@@ -12,6 +12,10 @@ static u32 ALIGN_PSPDATA display_list_0[256];
 static void *disp_frame;
 static void *draw_frame;
 
+static u16 *present_source;
+
+#define PRESENT_SOURCE_BYTES (GBA_LINE_SIZE * GBA_SCREEN_HEIGHT * 2)
+
 typedef struct
 {
   u16 u, v;
@@ -247,13 +251,36 @@ static void generate_display_list(float scale_x, float scale_y)
   sceGuFinish();
 }
 
+void psp_video_set_source(u16 *src)
+{
+  present_source = src;
+}
+
+/* For CPU reads of the presented frame: another core wrote present_source
+ * to RAM, so this CPU's cached copy of it may be stale. */
+static u16 *present_source_for_cpu(void)
+{
+  if (present_source == NULL)
+    return screen_texture;
+
+  sceKernelDcacheInvalidateRange(present_source, PRESENT_SOURCE_BYTES);
+  return present_source;
+}
+
 static void bitbilt_gu(void)
 {
   sceKernelDcacheWritebackAll();
 
   sceGuStart(GU_DIRECT, display_list);
 
+  if (present_source != NULL)
+    sceGuTexImage(0, 256, 256, GBA_LINE_SIZE, present_source);
+
   sceGuCallList(display_list_0);
+
+  /* The volume icon textures from screen_texture's spare rows. */
+  if (present_source != NULL)
+    sceGuTexImage(0, 256, 256, GBA_LINE_SIZE, screen_texture);
 
   sceGuFinish();
   sceGuSync(0, GU_SYNC_FINISH);
@@ -277,7 +304,7 @@ static void bitbilt_sw(void)
   sceGuSync(0, GU_SYNC_FINISH);
 
   vptr0 = (u16 *)psp_vram_addr(draw_frame, 60, 16);
-  d0 = screen_texture;
+  d0 = present_source_for_cpu();
 
   for (y = 0; y < (GBA_SCREEN_HEIGHT / 2); y++)
   {
@@ -408,7 +435,7 @@ u16 *copy_screen(void)
 
   copy = (u16 *)safe_malloc(GBA_SCREEN_SIZE);
 
-  p_src0 = screen_texture;
+  p_src0 = present_source_for_cpu();
   p_dest = copy;
 
   for (y = 0; y < GBA_SCREEN_HEIGHT; y++)
