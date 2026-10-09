@@ -60,6 +60,12 @@ include ${PSPSDK}/lib/build.mak
 
 LDFLAGS += -flto
 
+# build.mak tracks no header dependencies, and the wrap files #include the
+# renderer sources.
+$(MAINOBJS): $(addprefix src/,$(COMMON_FILE))
+video_cc_wrap.o: src/video_cc.cc
+video_old_wrap.o: src/video.c
+
 all: $(EXTRA_TARGETS)
 	@$(MAKE) -C prx/exceptionHandler/prx
 	@cp prx/exceptionHandler/prx/exception.prx .

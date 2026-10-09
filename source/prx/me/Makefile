@@ -23,5 +23,8 @@ PSP_FW_VERSION = 500
 PSPSDK = $(shell psp-config --pspsdk-path)
 include $(PSPSDK)/lib/build.mak
 
-video.o: ../../src/video_cc.cc ../../src/me_render_env.h ../../src/me_shared.h
+main.o me_render_glue.o: ../../src/me_shared.h
+
+video.o: ../../src/video_cc.cc ../../src/me_render_env.h ../../src/me_shared.h \
+         ../../src/video.h ../../src/cpu.h ../../src/memory.h
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
