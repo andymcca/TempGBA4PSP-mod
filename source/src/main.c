@@ -21,6 +21,7 @@
 
 #include "common.h"
 #include "power_lifecycle.h"
+#include "me_video.h"
 
 static PowerLifecycle psp_power_lifecycle;
 static u32 sleep_reopen_gamepak = 0;
@@ -47,7 +48,7 @@ u32 option_screen_filter = FILTER_BILINEAR;
 u32 option_sound_volume = 10;
 u32 option_stack_optimize = 1;
 u32 option_ram_dynarec_policy = RAM_DYNAREC_PARTIAL_WITH_REUSE;
-u32 option_video_renderer = VIDEO_RENDERER_NEW;
+u32 option_video_renderer = VIDEO_RENDERER_NEW_ME;
 u32 option_oam_hijacking_enabled = 0;
 u32 option_boot_mode = 0;
 u32 option_update_backup = 0;
@@ -425,7 +426,7 @@ u32 update_gba(void)
           // END TEST CRASH HANDLER
           // ===================================================================
 
-          if (!skip_next_frame)
+          if (!skip_next_frame && !me_video_frame())
             (*update_screen)();
 
           update_gbc_sound(cpu_ticks);
@@ -1014,6 +1015,7 @@ void quit(void)
   update_backup_immediately();
   save_config_file();
 
+  me_video_shutdown();
   sound_term();
   memory_term();
   video_term();
@@ -1098,7 +1100,10 @@ static void main_power_service(void)
 
   state = power_lifecycle_state(&psp_power_lifecycle);
   if (sleep_flag != 0 || state == POWER_LIFECYCLE_SUSPENDED)
+  {
     psp_sleep_loop();
+    me_video_power_resume();
+  }
 
   main_power_save_if_pending();
 
@@ -1135,6 +1140,7 @@ static int power_callback(int unknown, int powerInfo, void *arg)
     power_lifecycle_suspend(&psp_power_lifecycle,
                             gamepak_filename[0] != '\0');
     sleep_flag = 1;
+    me_video_power_suspend();
   }
 
   if ((powerInfo & PSP_POWER_CB_RESUME_COMPLETE) != 0)

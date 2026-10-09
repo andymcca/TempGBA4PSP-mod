@@ -126,6 +126,7 @@ To upgrade an existing single-game folder, copy these from a fresh build (keep y
 - `TempGBA.prx`
 - `exception.prx`
 - `ku_bridge.prx` (if present)
+- `tempgba_me.prx` (for the **New (ME)** renderer)
 - `gba_bios.bin`
 
 | Path | Purpose |
@@ -188,11 +189,13 @@ Graphics Options → **Video renderer** selects the scanline engine. **OAM hijac
 | **Old** | Generally **quicker** on PSP. Classic TempGBA path with OAM/affine fixes backported from libretro/gpSP. | Less accurate blending / object edge cases; a few remaining visual bugs vs hardware. |
 | **New** | **More compatible** — rewritten path aligned with libretro gpsp / PR258 `video.cc` (better blend and OBJ handling). | Heavier than Old on some titles. |
 | **New + OAM hijack ON** | Closest practical option to **hardware-like** video when games rewrite OAM mid-frame or otherwise confuse sprite sorting. | Extra work on top of New; only useful when the game actually needs it. |
+| **New (ME)** | The New renderer run on the PSP's **Media Engine** (second CPU), ported from [gbadhoc](gbadhoc/): the main CPU records each line's video registers and keeps emulating while the ME draws. Frees most of the rendering time for emulation. | Needs `tempgba_me.prx` beside the EBOOT and a CFW with kubridge; falls back to New on the CPU if the ME is unavailable. The picture is one frame behind. Mid-frame palette/OAM changes are replayed per line; mid-frame VRAM changes are drawn with the end-of-frame values. |
 
 **Tips**
 
+- **New (ME)** is the build default; it silently runs as **New** where the ME cannot be used.
 - Prefer **Old** when chasing framerate and the game already looks correct.
-- Prefer **New** as the compatibility default (and it is the build default).
+- Prefer **New** if a game misbehaves under New (ME).
 - Turn on **OAM hijack** only if sprites / windows still glitch under New; leave it off otherwise.
 
 ---

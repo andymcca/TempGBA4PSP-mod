@@ -56,6 +56,7 @@
 // renderer option
 #define VIDEO_RENDERER_OLD 0
 #define VIDEO_RENDERER_NEW 1
+#define VIDEO_RENDERER_NEW_ME 2   /* New, run on the Media Engine */
 
 
 extern u32 option_screen_scale;

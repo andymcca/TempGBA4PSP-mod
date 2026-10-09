@@ -14,6 +14,10 @@ void flip_screen(u32 vsync);
 void video_resolution_large(void);
 void video_resolution_small(void);
 
+/* Texture the GBA frame is presented from (GBA_LINE_SIZE stride, main RAM,
+ * never written by this CPU); NULL = screen_texture. */
+void psp_video_set_source(u16 *src);
+
 void clear_screen(u32 color);
 void clear_texture(u16 color);
 

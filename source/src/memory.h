@@ -152,6 +152,8 @@ extern u8 *gamepak_rom;
 extern u32 gamepak_ram_buffer_size;
 
 extern u32 oam_update;
+extern u32 palette_update;
+extern u8 vram_dirty[0x18000 >> 10];
 
 extern DmaTransferType dma[4];
 
