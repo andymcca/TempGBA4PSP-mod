@@ -2626,14 +2626,7 @@ void update_scanline(void)
   // this renderer would have drawn it with.
   if (me_capture_buf != NULL && vcount < 160)
   {
-    int *aff = me_capture_buf->affine[vcount];
-
-    memcpy(me_capture_buf->ioregs[vcount], io_registers,
-           ME_CAP_IOREGS * sizeof(u16));
-    aff[0] = affine_reference_x[0];
-    aff[1] = affine_reference_x[1];
-    aff[2] = affine_reference_y[0];
-    aff[3] = affine_reference_y[1];
+    me_capture_line(vcount);
 
     if (video_mode)
       affine_advance(vcount);

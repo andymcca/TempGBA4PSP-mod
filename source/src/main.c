@@ -1100,7 +1100,10 @@ static void main_power_service(void)
 
   state = power_lifecycle_state(&psp_power_lifecycle);
   if (sleep_flag != 0 || state == POWER_LIFECYCLE_SUSPENDED)
+  {
     psp_sleep_loop();
+    me_video_power_resume();
+  }
 
   main_power_save_if_pending();
 
@@ -1137,6 +1140,7 @@ static int power_callback(int unknown, int powerInfo, void *arg)
     power_lifecycle_suspend(&psp_power_lifecycle,
                             gamepak_filename[0] != '\0');
     sleep_flag = 1;
+    me_video_power_suspend();
   }
 
   if ((powerInfo & PSP_POWER_CB_RESUME_COMPLETE) != 0)

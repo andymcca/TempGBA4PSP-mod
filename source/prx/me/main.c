@@ -38,6 +38,7 @@ static void me_dispatch(volatile me_mbox *mb)
 {
   unsigned int seen;
 
+  mb->boots   = mb->boots + 1;
   mb->version = ME_MBOX_VERSION;
   mb->magic   = ME_MBOX_MAGIC;
   seen = mb->cmd_seq;
@@ -203,16 +204,24 @@ static void me_sysevent_remove(void)
   g_me_seh_orig = NULL;
 }
 
-/* argp[0] = mailbox pointer (uncached alias). */
+/* argp[0] = mailbox pointer (uncached alias).
+ * argp[1] = nonzero: fail (0xDE000000 | handlers walked) rather than boot
+ *           the ME without the suspend handler. */
 int module_start(SceSize args, void *argp)
 {
+  const unsigned int *a = (const unsigned int *)argp;
   volatile me_mbox *mb;
-  if (args < 4 || !argp)
+  int walked;
+
+  if (args < 4 || !a)
     return -1;
-  mb = (volatile me_mbox *)(*(unsigned int *)argp);
+  mb = (volatile me_mbox *)a[0];
   if (!mb)
     return -1;
-  me_sysevent_install();
+
+  walked = me_sysevent_install();
+  if (walked < 0 && args >= 8 && a[1] != 0)
+    return (int)(0xDE000000u | (unsigned int)(-1 - walked));
   return me_boot(mb);
 }
 
@@ -220,13 +229,13 @@ int module_stop(SceSize args, void *argp)
 {
   (void)args; (void)argp;
   me_sysevent_remove();
-  sceSysregMeResetEnable();
-  /* me_boot enabled the bus clock; leaving it on is what the kernel cannot
-   * survive a later suspend with. */
-  sceSysregMeBusClockDisable();
   if (me_vec_saved)
   {
     unsigned int k1 = pspSdkSetK1(0);
+    sceSysregMeResetEnable();
+    /* me_boot enabled the bus clock; leaving it on is what the kernel
+     * cannot survive a later suspend with. */
+    sceSysregMeBusClockDisable();
     memcpy((void *)0xbfc00040, me_vec_save, ME_VEC_BYTES);
     _sw(me_arg_save[0], 0xbfc00600);
     _sw(me_arg_save[1], 0xbfc00604);

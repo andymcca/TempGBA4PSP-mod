@@ -1177,6 +1177,15 @@ store_update_gba:
 #   $5 (outgoing)  = memory region
 #   $6 (invariant) = PC
 # See smc_write for its register assignment.
+# $4 = VRAM offset; uses $1 and $2.
+.macro mark_vram_dirty
+  srl $1, $4, 10                  # $1 = 1 KiB page of the offset
+  lui $2, %hi(vram_dirty)
+  addu $2, $2, $1
+  addiu $1, $0, 1
+  sb $1, %lo(vram_dirty)($2)      # vram_dirty[page] = 1
+.endm
+
 .macro post_write_metadata_core base, metabase, memory_region
   srl $2, $4, 2                   # $2 = (address & ~3) [>> 2]
   sll $2, $2, 3                   # byte offset into a 16-bit array: * 2
@@ -1203,6 +1212,7 @@ post_write_metadata_iwram:
   post_write_metadata_core iwram, iwram_metadata, 0x03
 
 post_write_metadata_vram:
+  mark_vram_dirty
   post_write_metadata_core vram, vram_metadata, 0x06
 
 post_write_metadata_aligned_iwram:
@@ -2687,6 +2697,8 @@ execute_store_io_u8:
 
 execute_store_palette_u8:
   translate_region 5, patch_store_u8, palette_ram, 0x3FE
+  lui $1, %hi(palette_update)     # write non-zero to palette_update
+  sw $1, %lo(palette_update)($1)  # cheap, but the address is non-zero
   store_u8_double palette_ram, -1
 
 execute_store_vram_u8:
@@ -2800,6 +2812,8 @@ execute_store_io_u16:
 
 execute_store_palette_u16:
   translate_region 5, patch_store_u16, palette_ram, 0x3FE
+  lui $1, %hi(palette_update)     # write non-zero to palette_update
+  sw $1, %lo(palette_update)($1)  # cheap, but the address is non-zero
   store_u16 palette_ram, -1
 
 execute_store_vram_u16:
@@ -2897,6 +2911,8 @@ execute_store_io_u32:
 
 execute_store_palette_u32:
   translate_region 5, patch_store_u32, palette_ram, 0x3FC
+  lui $1, %hi(palette_update)     # write non-zero to palette_update
+  sw $1, %lo(palette_update)($1)  # cheap, but the address is non-zero
   store_u32 palette_ram, -2
 
 execute_store_vram_u32:
@@ -2999,11 +3015,16 @@ execute_store_io_u32a:
 
 execute_store_palette_u32a:
   translate_region 5, patch_store_u32a, palette_ram, 0x3FC
+  lui $1, %hi(palette_update)     # write non-zero to palette_update
+  sw $1, %lo(palette_update)($1)  # cheap, but the address is non-zero
   store_u32a palette_ram, -2
 
 execute_store_vram_u32a:
   translate_region_vram_store_align32 patch_store_u32a
-  store_u32a vram, -2
+  sw $5, %lo(vram)($2)            # store value at vram[offset]
+  mark_vram_dirty
+  jr $ra                          # return
+  addiu $17, $17, -2              # waitstate cycles (delay)
 
 execute_store_oam_u32a:
   translate_region 7, patch_store_u32a, oam_ram, 0x3FC

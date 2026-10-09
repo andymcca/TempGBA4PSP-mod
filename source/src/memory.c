@@ -115,6 +115,12 @@ SceUID gamepak_file_large = -1;
 // If OAM is written to:
 u32 oam_update = 1;
 
+// If palette RAM is written to:
+u32 palette_update = 1;
+
+// 1 KiB pages of VRAM written to (cleared by the New (ME) renderer):
+u8 vram_dirty[0x18000 >> 10];
+
 
 // RTC
 typedef enum
@@ -1006,13 +1012,15 @@ static CPU_ALERT_TYPE write32_io_registers(u32 address, u32 value)
 
 static CPU_ALERT_TYPE write8_palette_ram(u32 address, u32 value)
 {
+  palette_update = 1;
   ADDRESS16(palette_ram, address & 0x3Fe) = value | (value << 8);
-
+  
   return CPU_ALERT_NONE;
 }
 
 static CPU_ALERT_TYPE write16_palette_ram(u32 address, u32 value)
 {
+  palette_update = 1;
   ADDRESS16(palette_ram, address & 0x3Fe) = value;
 
   return CPU_ALERT_NONE;
@@ -1020,6 +1028,7 @@ static CPU_ALERT_TYPE write16_palette_ram(u32 address, u32 value)
 
 static CPU_ALERT_TYPE write32_palette_ram(u32 address, u32 value)
 {
+  palette_update = 1;
   ADDRESS32(palette_ram, address & 0x3FC) = value;
 
   return CPU_ALERT_NONE;
@@ -1031,6 +1040,7 @@ static CPU_ALERT_TYPE write32_palette_ram(u32 address, u32 value)
   else                                                                        \
     address &= 0x0FFFF;                                                       \
                                                                               \
+  vram_dirty[address >> 10] = 1;                                              \
   ADDRESS##type(vram, address) = value;                                       \
   return check_smc_write(vram_metadata, address, 0x06);                       \
 
@@ -1044,6 +1054,7 @@ static CPU_ALERT_TYPE write8_vram(u32 address, u32 value)
   if (address >= obj_address)
     return  CPU_ALERT_NONE;
 
+  vram_dirty[address >> 10] = 1;
   ADDRESS16(vram, address) = value | (value << 8);
   return check_smc_write(vram_metadata, address, 0x06);
 }
@@ -2833,6 +2844,8 @@ void init_memory(void)
   affine_reference_y[1] = 0;
 
   oam_update = 1;
+  palette_update = 1;
+  memset(vram_dirty, 1, sizeof(vram_dirty));
 
   //sram_size = SRAM_SIZE_32KB;//
   //flash_size = FLASH_SIZE_64KB;//
@@ -3637,6 +3650,8 @@ u32 load_state(char *savestate_filename)
     clear_metadata_area(METADATA_AREA_VRAM,  CLEAR_REASON_LOADING_STATE);
 
     oam_update = 1;
+    palette_update = 1;
+    memset(vram_dirty, 1, sizeof(vram_dirty));
     gbc_sound_update = 1;
     reg[CHANGED_PC_STATUS] = 1;
     result = 1;
@@ -3673,6 +3688,8 @@ u32 load_state_silent(char *savestate_filename)
     clear_metadata_area(METADATA_AREA_VRAM,  CLEAR_REASON_LOADING_STATE);
 
     oam_update = 1;
+    palette_update = 1;
+    memset(vram_dirty, 1, sizeof(vram_dirty));
     gbc_sound_update = 1;
     reg[CHANGED_PC_STATUS] = 1;
     result = 1;

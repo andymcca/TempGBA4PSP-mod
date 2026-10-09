@@ -48,6 +48,7 @@ unsigned int me_render_run(volatile me_mbox *mb, unsigned int seq)
   me_render_desc *d = (me_render_desc *)ME_CACHED(mb->arg0);
   const me_capture_frame *cap;
   unsigned int sum = 0;
+  unsigned int log_n, use_log, bg_mode;
   int ln;
 
   me_inv((unsigned int)d, sizeof(*d));
@@ -59,28 +60,83 @@ unsigned int me_render_run(volatile me_mbox *mb, unsigned int seq)
   }
 
   /* ---- phase 1: snapshot ---------------------------------------------- */
-  me_inv((unsigned int)ME_CACHED(d->vram), sizeof(vram));
-  memcpy(vram, ME_CACHED(d->vram), sizeof(vram));
+  if (d->flags & ME_DESC_VRAM_FULL)
+  {
+    me_inv((unsigned int)ME_CACHED(d->vram), sizeof(vram));
+    memcpy(vram, ME_CACHED(d->vram), sizeof(vram));
+  }
+  else
+  {
+    const unsigned char *src = (const unsigned char *)ME_CACHED(d->vram);
+    unsigned int p;
+    for (p = 0; p < ME_VRAM_PAGES; p++)
+    {
+      unsigned int off = p << ME_VRAM_PAGE_SHIFT;
+      if (d->vram_pages[p] == 0)
+        continue;
+      me_inv((unsigned int)(src + off), 1u << ME_VRAM_PAGE_SHIFT);
+      memcpy(vram + off, src + off, 1u << ME_VRAM_PAGE_SHIFT);
+    }
+  }
   me_inv((unsigned int)ME_CACHED(d->oam), sizeof(oam_ram));
   memcpy(oam_ram, ME_CACHED(d->oam), sizeof(oam_ram));
   me_inv((unsigned int)ME_CACHED(d->palette), sizeof(palette_ram));
   memcpy(palette_ram, ME_CACHED(d->palette), sizeof(palette_ram));
-  me_inv((unsigned int)ME_CACHED(d->capture), sizeof(me_capture_frame));
+
+  cap = (const me_capture_frame *)ME_CACHED(d->capture);
+  me_inv((unsigned int)cap, ME_CAP_FIXED_BYTES);
+  log_n = cap->log_start[160];
+  if (log_n > ME_LOG_MAX)
+    log_n = ME_LOG_MAX;
+  me_inv((unsigned int)cap->log, log_n * sizeof(me_log_entry));
   mb->input_seq = seq;
 
   /* ---- phase 2: render ------------------------------------------------ */
-  cap = (const me_capture_frame *)ME_CACHED(d->capture);
   skip_next_frame = 0;
   option_oam_hijacking_enabled = (d->flags & ME_DESC_OAM_HIJACK) ? 1 : 0;
   screen_texture = me_out;
-  /* OAM is a fresh snapshot every frame, so the object lists are rebuilt
-   * from it rather than tracked across frames. */
+  /* Palette and OAM start as line 0 saw them and follow the log; without
+   * a log the vcount-160 snapshot above draws the whole frame. */
+  use_log = cap->log_valid;
+  if (use_log)
+  {
+    memcpy(palette_ram, cap->palette0, sizeof(palette_ram));
+    memcpy(oam_ram, cap->oam0, sizeof(oam_ram));
+  }
+  /* The object lists are rebuilt every frame rather than tracked across
+   * frames, and again whenever OAM or the BG mode changes. */
   oam_update = 1;
+  bg_mode = cap->ioregs[0][0] & 0x07;
 
   for (ln = 0; ln < 160; ln++)
   {
     const int *a = cap->affine[ln];
+
+    if (use_log)
+    {
+      unsigned int i   = cap->log_start[ln];
+      unsigned int end = cap->log_start[ln + 1];
+      if (end > log_n)
+        end = log_n;
+      for (; i < end; i++)
+      {
+        unsigned int idx = cap->log[i].index;
+        if (idx & ME_LOG_OAM)
+        {
+          oam_ram[idx & 0x1FF] = cap->log[i].value;
+          oam_update = 1;
+        }
+        else
+          palette_ram[idx & 0x1FF] = cap->log[i].value;
+      }
+    }
+
     memcpy(io_registers, cap->ioregs[ln], ME_CAP_IOREGS * sizeof(u16));
+    if ((io_registers[0] & 0x07) != bg_mode)
+    {
+      bg_mode = io_registers[0] & 0x07;
+      oam_update = 1;
+    }
     affine_reference_x[0] = a[0];
     affine_reference_x[1] = a[1];
     affine_reference_y[0] = a[2];
