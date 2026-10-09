@@ -3604,7 +3604,7 @@ u32 menu(void)
     option_screen_scale = SCALED_X15_GU;
     option_screen_mag = 170;
     option_screen_filter = FILTER_BILINEAR;
-    option_video_renderer = VIDEO_RENDERER_NEW;
+    option_video_renderer = VIDEO_RENDERER_NEW_ME;
     option_oam_hijacking_enabled = 0;
     option_psp_vsync = 0;
   }
@@ -5412,7 +5412,7 @@ s32 load_config_file(void)
         else
           option_ram_dynarec_policy = RAM_DYNAREC_PARTIAL_WITH_REUSE;
       }
-      option_video_renderer         = VIDEO_RENDERER_NEW;
+      option_video_renderer         = VIDEO_RENDERER_NEW_ME;
       option_oam_hijacking_enabled  = file_options[10] % 2;
       option_boot_mode              = file_options[11] % 2;
       option_update_backup          = file_options[12] % 2;
@@ -5456,7 +5456,7 @@ s32 load_config_file(void)
       option_sound_volume           = file_options[7] % 11;
       option_stack_optimize         = file_options[8] % 2;
       option_ram_dynarec_policy     = RAM_DYNAREC_PARTIAL_WITH_REUSE;
-      option_video_renderer         = VIDEO_RENDERER_NEW;
+      option_video_renderer         = VIDEO_RENDERER_NEW_ME;
       option_oam_hijacking_enabled  = 0;
       option_boot_mode              = file_options[9] % 2;
       option_update_backup          = file_options[10] % 2;
@@ -5494,7 +5494,7 @@ s32 load_config_file(void)
   option_sound_volume             = 10;
   option_stack_optimize           = 1;
   option_ram_dynarec_policy       = RAM_DYNAREC_PARTIAL_WITH_REUSE;
-  option_video_renderer           = VIDEO_RENDERER_NEW;
+  option_video_renderer           = VIDEO_RENDERER_NEW_ME;
   option_oam_hijacking_enabled    = 0;
   option_boot_mode                = 0;
   option_update_backup            = 1;		//auto
