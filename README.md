@@ -5,8 +5,8 @@
 <h1 align="center">TempGBA4PSP-mod</h1>
 
 <p align="center">
-  <strong>A modernized Game Boy Advance emulator for PlayStation Portable</strong><br>
-  Built on TempGBA / gpSP, with ongoing accuracy, performance, UI, and compatibility work.
+  <strong>A continuation of the Game Boy Advance emulator for PlayStation Portable</strong><br>
+  Forked from TempGBA / gpSP sources, with ongoing accuracy, performance, UI, and compatibility work.
 </p>
 
 <p align="center">
@@ -19,7 +19,7 @@
 
 ## About
 
-**TempGBA4PSP-mod** is a maintained PSP port of TempGBA (itself based on [phoe-nix’s TempGBA lineage](https://github.com/phoe-nix/TempGBA4PSP-mod) and the classic gpSP dynarec core). This tree focuses on real-hardware PSP usability: better menus, stronger game compatibility, dynarec/video accuracy fixes pulled from upstream libretro/gpSP work, and performance options tuned for Allegrex.
+**TempGBA4PSP-mod** is a maintained PSP fork of TempGBA4PSP-mod by Phoe-nix (https://github.com/phoe-nix/TempGBA4PSP-mod) incorporating new bug fixes/features and also those from other gpsp variants. This tree focuses on real-hardware PSP usability: bug fixes, added features, stronger game compatibility, dynarec/video accuracy fixes pulled from upstream libretro/gpSP work, and performance options tuned for Allegrex.
 
 It remains a homebrew GBA emulator — you need a legal BIOS dump (`gba_bios.bin`) and your own ROMs.
 
@@ -29,10 +29,10 @@ It remains a homebrew GBA emulator — you need a legal BIOS dump (`gba_bios.bin
 
 | Area | What’s new |
 |------|------------|
-| **UI** | Themes, custom colors, multi-language menus, X/O confirm swap, Graphics Options submenu |
-| **Video** | Dual renderer (classic + PR258/`video.cc`), 16:9 fullscreen, OAM hijack toggle, optional PSP VSync |
+| **Video** | Three renderer options (Old(TempGBA original), New(lr-gpsp) and New-ME(GBAdhoc Media Engine)), 16:9 fullscreen, OAM hijack toggle, optional PSP VSync |
 | **Performance** | LTO builds, Allegrex blend opts, sticky ROM paging, SWI HLE, EWRAM stack fast paths, RAM JIT reuse modes |
 | **Accuracy** | Dynarec flag fixes, sound I/O masks, OAM/affine/HBlank IRQ fixes, `game_config` SMC gates |
+| **UI** | Themes, custom colors, multi-language menus, X/O confirm swap, Graphics Options submenu |
 | **Install** | Custom XMB icon/splash, drop-in single-game (`roms/game.gba`) auto-detect, **included GUI builder tool** for custom XMB bubbles |
 | **Compat** | Fixes for titles that previously failed or glitched (see below) |
 
